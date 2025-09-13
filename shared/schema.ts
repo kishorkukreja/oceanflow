@@ -92,6 +92,21 @@ export const insertMarketIndexSchema = createInsertSchema(marketIndices).omit({
   lastUpdated: true,
 });
 
+// Normalized schema for creating quotes from frontend (handles string to number/date conversions)
+export const createQuoteSchema = insertQuoteSchema.extend({
+  rate: z.coerce.number().gt(0, "Rate must be greater than 0"),
+  validUntil: z.preprocess(
+    (val) => {
+      if (val == null || val === "") return undefined;
+      if (typeof val === "string") return new Date(val);
+      return val;
+    },
+    z.date().optional()
+  ),
+  evaluation: z.any().nullable().optional(),
+  recommendation: z.string().optional().nullable()
+});
+
 // Types
 export type Lane = typeof lanes.$inferSelect;
 export type InsertLane = z.infer<typeof insertLaneSchema>;

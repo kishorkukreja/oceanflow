@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLaneSchema, insertSimulationSchema, insertQuoteSchema, insertAlternativeSchema, insertMarketIndexSchema } from "@shared/schema";
+import { insertLaneSchema, insertSimulationSchema, insertQuoteSchema, insertAlternativeSchema, insertMarketIndexSchema, createQuoteSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Market Indices
@@ -168,23 +168,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/quotes", async (req, res) => {
     try {
-      const data = insertQuoteSchema.parse(req.body);
+      const data = createQuoteSchema.parse(req.body);
       const quote = await storage.createQuote(data);
       res.json(quote);
     } catch (error) {
+      // Log Zod validation errors in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Quote validation error:', error);
+        console.error('Request body:', req.body);
+      }
       res.status(400).json({ error: "Invalid quote data" });
     }
   });
 
   app.patch("/api/quotes/:id", async (req, res) => {
     try {
-      const updates = insertQuoteSchema.partial().parse(req.body);
+      const updates = createQuoteSchema.partial().parse(req.body);
       const quote = await storage.updateQuote(req.params.id, updates);
       if (!quote) {
         return res.status(404).json({ error: "Quote not found" });
       }
       res.json(quote);
     } catch (error) {
+      // Log Zod validation errors in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Quote update validation error:', error);
+        console.error('Request body:', req.body);
+      }
       res.status(400).json({ error: "Invalid update data" });
     }
   });
