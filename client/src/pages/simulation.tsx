@@ -191,18 +191,31 @@ export default function SimulationPage() {
           </div>
 
           {/* Progress Display */}
-          {isRunning && (
-            <div className="mt-6 p-4 bg-muted rounded-md">
+          {(isRunning || progress > 0) && (
+            <div className="mt-6 p-4 bg-muted rounded-md" data-testid="simulation-progress">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Simulation Progress</span>
-                <span className="text-sm text-muted-foreground">
+                <span 
+                  className="text-sm text-muted-foreground"
+                  data-testid="simulation-progress-text"
+                >
                   {progress}% Complete ({currentIteration.toLocaleString()}/{parseInt(iterations).toLocaleString()})
                 </span>
               </div>
               <Progress value={progress} className="h-2" />
-              <div className="text-xs text-muted-foreground mt-1">
-                ETA: {Math.round((100 - progress) * 0.1)} seconds
-              </div>
+              {isRunning && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  ETA: {Math.round((100 - progress) * 0.1)} seconds
+                </div>
+              )}
+              {progress === 100 && !isRunning && (
+                <div 
+                  className="text-xs text-green-600 font-medium mt-1"
+                  data-testid="simulation-status-completed"
+                >
+                  Simulation completed successfully
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -244,7 +257,7 @@ export default function SimulationPage() {
 
       {/* Results Display */}
       {results && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6" data-testid="simulation-results">
           <Card className="xl:col-span-2">
             <CardHeader>
               <CardTitle>Simulation Results</CardTitle>

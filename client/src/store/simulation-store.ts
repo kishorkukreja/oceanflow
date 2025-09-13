@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { SimulationResult, RateFactor, TransitSegment } from '@shared/schema';
 import { calculateStatistics } from '@/lib/statistics';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 interface SimulationParams {
   simulationId: string;
@@ -65,6 +66,31 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         case 'complete':
           const duration = Date.now() - startTime;
           get().setResults(data);
+          
+          // Sync completion status to backend
+          const currentResults = get().results;
+          if (currentResults && params.simulationId) {
+            const summary = {
+              rateStats: currentResults.rateStats,
+              transitStats: currentResults.transitStats,
+              duration: duration,
+              iterations: params.iterations
+            };
+            
+            // Update backend status
+            apiRequest('PATCH', `/api/simulations/${params.simulationId}`, {
+              status: 'completed',
+              results: summary
+            })
+            .then(() => {
+              // Invalidate cache to refresh simulation list
+              queryClient.invalidateQueries({ queryKey: ['/api/simulations'] });
+              queryClient.invalidateQueries({ queryKey: ['/api/simulations', params.simulationId] });
+            })
+            .catch(error => {
+              console.error('Failed to update simulation status:', error);
+            });
+          }
           
           set({
             isRunning: false,
