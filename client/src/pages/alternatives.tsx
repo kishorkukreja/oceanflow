@@ -266,14 +266,97 @@ export default function Alternatives() {
             <CardTitle>Cost Distribution Comparison</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 bg-muted/20 rounded-md flex items-center justify-center">
-              <div className="text-center">
-                <Calculator className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-lg text-muted-foreground mb-2">Strategy cost distributions</p>
-                <p className="text-sm text-muted-foreground">Monte Carlo simulation results overlay</p>
-                <p className="text-xs text-muted-foreground mt-4">
-                  Chart visualization would show overlapping probability distributions for each strategy
-                </p>
+            <div className="space-y-6">
+              {/* Cost Comparison Chart */}
+              <div className="relative">
+                <div className="space-y-4">
+                  {/* Book Now Distribution */}
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-green-800">Book Now Strategy</span>
+                      <span className="text-sm text-green-600 font-mono">${analysisResults.bookNow.expectedCost.toLocaleString()}</span>
+                    </div>
+                    <div className="relative">
+                      <div className="h-6 bg-green-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-green-500 rounded-full transition-all duration-1000" 
+                          style={{ width: `${analysisResults.bookNow.confidence}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-green-600 mt-1">
+                        <span>Low: ${(analysisResults.bookNow.expectedCost * 0.95).toFixed(0)}</span>
+                        <span>Mean: ${analysisResults.bookNow.expectedCost.toLocaleString()}</span>
+                        <span>High: ${(analysisResults.bookNow.expectedCost * 1.05).toFixed(0)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Wait 1 Week Distribution */}
+                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-yellow-800">Wait 1 Week Strategy</span>
+                      <span className="text-sm text-yellow-600 font-mono">${analysisResults.wait1Week.expectedCost.toLocaleString()}</span>
+                    </div>
+                    <div className="relative">
+                      <div className="h-6 bg-yellow-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-yellow-500 rounded-full transition-all duration-1000" 
+                          style={{ width: `${analysisResults.wait1Week.confidence}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-yellow-600 mt-1">
+                        <span>Low: ${(analysisResults.wait1Week.expectedCost * 0.85).toFixed(0)}</span>
+                        <span>Mean: ${analysisResults.wait1Week.expectedCost.toLocaleString()}</span>
+                        <span>High: ${(analysisResults.wait1Week.expectedCost * 1.15).toFixed(0)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Split Strategy Distribution */}
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-blue-800">Split Strategy ({analysisResults.split.immediate}/{analysisResults.split.delayed})</span>
+                      <span className="text-sm text-blue-600 font-mono">${analysisResults.split.expectedCost.toLocaleString()}</span>
+                    </div>
+                    <div className="relative">
+                      <div className="h-6 bg-blue-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500 rounded-full transition-all duration-1000" 
+                          style={{ width: '80%' }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-blue-600 mt-1">
+                        <span>Low: ${(analysisResults.split.expectedCost * 0.92).toFixed(0)}</span>
+                        <span>Mean: ${analysisResults.split.expectedCost.toLocaleString()}</span>
+                        <span>High: ${(analysisResults.split.expectedCost * 1.08).toFixed(0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cost Comparison Summary */}
+              <div className="bg-muted/20 p-4 rounded-lg">
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-green-600">
+                      ${(Math.max(analysisResults.bookNow.expectedCost, analysisResults.wait1Week.expectedCost, analysisResults.split.expectedCost) - analysisResults.bookNow.expectedCost).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Book Now Savings</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-yellow-600">
+                      ${(Math.abs(analysisResults.wait1Week.expectedCost - analysisResults.bookNow.expectedCost)).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Wait Strategy Difference</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-600">
+                      ${(Math.abs(analysisResults.split.expectedCost - analysisResults.bookNow.expectedCost)).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Split Strategy Difference</div>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
