@@ -77,7 +77,7 @@ export function TransitSimulator({ segments: initialSegments, onSegmentChange }:
   return (
     <div className="space-y-4" data-testid="transit-simulator">
       {/* Total Transit Summary */}
-      <Card className="bg-primary/5 border-primary/20">
+      <Card className="bg-primary/5 border-primary/20" data-testid="transit-total-summary">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -110,7 +110,7 @@ export function TransitSimulator({ segments: initialSegments, onSegmentChange }:
           const risk = getRiskLevel(variance, segment.baselineDays);
 
           return (
-            <Card key={index} className="border-border">
+            <Card key={index} className="border-border" data-testid={`transit-segment-card-${index}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

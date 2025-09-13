@@ -14,6 +14,7 @@ import { QuoteAnalyzer } from "@/components/decision/quote-analyzer";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertQuoteSchema, type Quote, type Lane, type InsertQuote } from "@shared/schema";
+import { z } from "zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
@@ -42,12 +43,18 @@ export default function Quotes() {
     queryKey: ["/api/lanes"] 
   });
 
-  const form = useForm<InsertQuote>({
-    resolver: zodResolver(insertQuoteSchema),
+  const quoteFormSchema = insertQuoteSchema.extend({
+    rate: z.number().min(0.01, "Rate must be greater than 0"),
+    laneId: z.string().min(1, "Please select a lane"),
+    carrier: z.string().min(1, "Please select a carrier")
+  });
+
+  const form = useForm<z.infer<typeof quoteFormSchema>>({
+    resolver: zodResolver(quoteFormSchema),
     defaultValues: {
       laneId: "",
       carrier: "",
-      rate: 0,
+      rate: undefined as any,
       validUntil: undefined,
       evaluation: null,
       recommendation: undefined
@@ -200,8 +207,16 @@ export default function Quotes() {
                       <FormControl>
                         <Input 
                           type="number" 
+                          step="0.01"
+                          min="0.01"
+                          placeholder="Enter rate (USD)"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          value={field.value || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const numValue = parseFloat(value);
+                            field.onChange(value === '' ? undefined : (isNaN(numValue) ? undefined : numValue));
+                          }}
                           data-testid="input-rate"
                         />
                       </FormControl>
