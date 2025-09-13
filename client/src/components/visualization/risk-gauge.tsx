@@ -126,11 +126,11 @@ export function RiskGauge({ score, size = 120, showLabels = true }: RiskGaugePro
         {/* Score display */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">
-              {gaugeData.normalizedScore.toFixed(1)}<span className="text-lg text-muted-foreground">/10</span>
+            <div className="text-3xl font-bold text-foreground leading-none">
+              {gaugeData.normalizedScore.toFixed(1)}
             </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Risk Score
+            <div className="text-sm text-muted-foreground -mt-1">
+              out of 10
             </div>
           </div>
         </div>
@@ -138,11 +138,11 @@ export function RiskGauge({ score, size = 120, showLabels = true }: RiskGaugePro
       
       {showLabels && (
         <div className="mt-4 text-center">
-          <p className="font-medium" style={{ color: gaugeData.riskColor }}>
+          <p className="font-semibold text-lg" style={{ color: gaugeData.riskColor }}>
             {gaugeData.riskLevel}
           </p>
-          <p className="text-xs text-muted-foreground">
-            Risk Score
+          <p className="text-sm text-muted-foreground mt-1">
+            Risk Assessment
           </p>
         </div>
       )}
