@@ -125,11 +125,13 @@ export function RiskGauge({ score, size = 120, showLabels = true }: RiskGaugePro
         
         {/* Score display */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center mt-4">
+          <div className="text-center">
             <div className="text-2xl font-bold text-foreground">
-              {gaugeData.normalizedScore.toFixed(1)}
+              {gaugeData.normalizedScore.toFixed(1)}<span className="text-lg text-muted-foreground">/10</span>
             </div>
-            <div className="text-xs text-muted-foreground">/ 10</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Risk Score
+            </div>
           </div>
         </div>
       </div>

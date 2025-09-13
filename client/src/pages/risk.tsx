@@ -79,7 +79,7 @@ export default function Risk() {
       </div>
 
       {/* Overall Risk Score */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Overall Risk Score</CardTitle>
@@ -89,32 +89,20 @@ export default function Risk() {
               <RiskGauge score={riskData.overallScore} />
             </div>
             
-            <div className="text-center mb-4">
-              <p className="font-medium text-yellow-600">{riskData.riskLevel}</p>
-              <p className="text-xs text-muted-foreground">Based on rate volatility & transit uncertainty</p>
-            </div>
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  Low Risk
-                </span>
-                <span className="text-muted-foreground">0-3</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  Moderate Risk
-                </span>
-                <span className="text-muted-foreground">4-7</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  High Risk
-                </span>
-                <span className="text-muted-foreground">8-10</span>
+            <div className="text-center">
+              <div className="p-4 bg-muted/20 rounded-lg">
+                <p className="font-medium text-lg" style={{ color: getRiskColor(riskData.overallScore).text.replace('text-', '') === 'yellow-700' ? '#f59e0b' : getRiskColor(riskData.overallScore).text.replace('text-', '') === 'red-700' ? '#ef4444' : '#10b981' }}>Current Status: {riskData.riskLevel}</p>
+                <p className="text-sm text-muted-foreground mt-2">Based on rate volatility, transit uncertainty, and market conditions</p>
+                <div className="mt-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    {riskData.factors.length} factors analyzed
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Updated hourly
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -125,25 +113,27 @@ export default function Risk() {
             <CardTitle>Risk Factor Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {riskData.factors.map((factor, index) => {
                 const riskInfo = getRiskColor(factor.score);
                 return (
                   <div key={index}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          {getTrendIcon(factor.trend)}
-                          <span className="font-medium">{factor.name}</span>
+                    <div className="bg-muted/30 p-4 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            {getTrendIcon(factor.trend)}
+                            <span className="font-semibold">{factor.name}</span>
+                          </div>
+                          <Badge className={`${riskInfo.bg} text-white font-medium`}>
+                            {factor.score.toFixed(1)}/10
+                          </Badge>
                         </div>
-                        <Badge className={`${riskInfo.bg} text-white`}>
-                          {factor.score}/10
-                        </Badge>
+                        <span className={`text-sm font-medium ${riskInfo.text}`}>{riskInfo.label}</span>
                       </div>
-                      <span className={`text-sm ${riskInfo.text}`}>{riskInfo.label}</span>
+                      <Progress value={factor.score * 10} className="h-2 mb-2" />
+                      <p className="text-sm text-muted-foreground">{factor.description}</p>
                     </div>
-                    <Progress value={factor.score * 10} className="h-2 mb-1" />
-                    <p className="text-xs text-muted-foreground">{factor.description}</p>
                   </div>
                 );
               })}
@@ -153,7 +143,7 @@ export default function Risk() {
       </div>
 
       {/* Risk Scenarios */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader>
             <CardTitle>Risk Scenarios</CardTitle>
