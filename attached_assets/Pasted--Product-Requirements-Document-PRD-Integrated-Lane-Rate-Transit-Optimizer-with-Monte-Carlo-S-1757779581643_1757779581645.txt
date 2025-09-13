@@ -1,0 +1,610 @@
+# Product Requirements Document (PRD)
+## Integrated Lane Rate & Transit Optimizer with Monte Carlo Simulations
+### Frontend-Only Proof of Concept with shadcn/ui
+
+---
+
+## 1. Executive Summary
+
+This PRD outlines a comprehensive frontend application that combines market index-based rate predictions with Monte Carlo simulations for both pricing and transit time uncertainty. The system evaluates spot quotes against probabilistic models and simulates multiple alternatives to provide risk-adjusted recommendations for logistics decision-making.
+
+## 2. Problem Statement
+
+Current logistics decision-making lacks integrated consideration of:
+- Market index movements and their impact on rates
+- Compound uncertainties in both pricing and transit times
+- Risk-adjusted evaluation of alternatives (wait, split, reroute)
+- Real-time decision scoring with probabilistic outcomes
+- The cascading impact of delays on total landed costs
+
+## 3. Solution Overview
+
+An integrated simulation platform that:
+1. Predicts rates using market indices and multiple factors
+2. Simulates transit uncertainties using Monte Carlo methods
+3. Scores incoming quotes against probability distributions
+4. Evaluates alternatives with full simulation of outcomes
+5. Provides actionable recommendations with confidence levels
+
+## 4. Core Architecture
+
+### 4.1 System Layers
+
+```
+┌─────────────────────────────────────┐
+│     Decision Interface Layer        │
+│   (Recommendations & Actions)       │
+├─────────────────────────────────────┤
+│    Alternative Evaluation Layer     │
+│  (Simulates each option fully)      │
+├─────────────────────────────────────┤
+│     Simulation Engine Layer         │
+│  (MC for rates + transit times)     │
+├─────────────────────────────────────┤
+│      Data Configuration Layer       │
+│ (Indices, factors, distributions)   │
+└─────────────────────────────────────┘
+```
+
+## 5. Detailed Feature Requirements
+
+### 5.1 Market Index Configuration Module
+
+**Purpose**: Set up baseline rate predictions using market indices
+
+**Features**:
+- **Index Selection & Mapping**
+  - Pre-configured indices: SCFI, CCFI, WCI, Baltic Dry
+  - Lane-to-index ratio configuration
+  - Historical ratio calculator from uploaded data
+  - Custom composite index builder
+
+**UI Components** (shadcn/ui):
+```tsx
+- <Select> for index selection
+- <Input> with <Label> for ratio inputs  
+- <Card> for each lane-index mapping
+- <LineChart> showing index history (Recharts)
+- <DataTable> for bulk lane configuration
+- <Button> with loading states for calculations
+```
+
+**Data Structure**:
+```javascript
+{
+  laneId: "SHA-LAX-001",
+  baseIndex: "SCFI",
+  indexValue: 1200,
+  laneRatio: 1.85,
+  historicalVolatility: 0.15,
+  lastUpdated: "2024-01-15T08:00:00Z"
+}
+```
+
+### 5.2 Multi-Factor Rate Prediction System
+
+**Purpose**: Layer multiple factors onto base index rates
+
+**Factor Categories with Distributions**:
+```javascript
+factors: {
+  carrierPremium: {
+    carrier: "Maersk",
+    meanMultiplier: 1.05,
+    distribution: "normal",
+    stdDev: 0.02
+  },
+  seasonality: {
+    week: 42,
+    meanMultiplier: 1.12,
+    distribution: "triangle",
+    min: 1.08, mode: 1.12, max: 1.18
+  },
+  capacityUtilization: {
+    current: 0.85,
+    impact: "exponential",
+    lambda: 2.5
+  },
+  fuelSurcharge: {
+    baseRate: 0.15,
+    distribution: "lognormal",
+    mu: 0.15, sigma: 0.05
+  }
+}
+```
+
+**UI Components**:
+```tsx
+- <Tabs> for factor categories
+- <Slider> for impact adjustments
+- <RadioGroup> for distribution selection
+- <Card> with <Badge> for active factors
+- Distribution preview with D3.js
+- <Switch> to enable/disable factors
+- <Popover> with distribution parameter inputs
+```
+
+### 5.3 Transit Time Simulation Module
+
+**Purpose**: Model compound delays across shipping legs (based on Frank's approach)
+
+**Features**:
+- **Multi-leg journey configuration**
+  - 3-5 segments per lane
+  - Distribution per segment (normal, lognormal, etc.)
+  - Congestion scenario overlays
+
+**Congestion Scenarios**:
+```javascript
+scenarios: {
+  bigBang: {
+    weeks: [1, 2, 3, 4, 5],
+    delays: [10, 8, 6, 4, 2],
+    probability: 0.10
+  },
+  gradual: {
+    weeks: [1, 2, 3, 4, 5],
+    delays: [1, 3, 5, 3, 1],
+    probability: 0.20
+  },
+  normal: {
+    probability: 0.70
+  }
+}
+```
+
+**UI Components**:
+```tsx
+- <Card> for each leg with transit parameters
+- <AreaChart> for delay distribution over time
+- <BoxPlot> (custom D3) for arrival ranges
+- <ToggleGroup> for scenario selection
+- <Progress> for simulation status
+- <Alert> for congestion warnings
+```
+
+### 5.4 Unified Simulation Engine
+
+**Purpose**: Run Monte Carlo simulations for both rates and transit
+
+**Technical Implementation**:
+```javascript
+// Web Worker for non-blocking simulations
+class SimulationWorker {
+  runIntegratedSimulation(params) {
+    const results = [];
+    for (let i = 0; i < params.iterations; i++) {
+      const rate = simulateRate(params.rateFactors);
+      const transit = simulateTransit(params.transitLegs);
+      const delays = calculateDelays(transit);
+      const penalties = calculatePenalties(delays);
+      const totalCost = rate + penalties;
+      
+      results.push({
+        iteration: i,
+        rate,
+        transitDays: transit,
+        arrivalDate: addDays(params.startDate, transit),
+        delayCost: penalties,
+        totalLandedCost: totalCost
+      });
+    }
+    return calculateStatistics(results);
+  }
+}
+```
+
+**Features**:
+- 1,000 - 100,000 iterations (configurable)
+- Parallel processing with Web Workers
+- Progressive result streaming
+- Caching for scenario switching
+
+**UI Components**:
+```tsx
+- <Dialog> for simulation settings
+- <Slider> for iteration count
+- <Progress> with percentage and ETA
+- <Button variant="outline"> for pause/resume
+- <Checkbox> for factor selection
+```
+
+### 5.5 Quote Evaluation & Decision Scoring
+
+**Purpose**: Score incoming quotes against simulated distributions
+
+**Decision Framework**:
+```javascript
+evaluateQuote(quote, simulations) {
+  const marketExpected = getIndexBaseline();
+  const modelPredicted = simulations.rateP50;
+  
+  return {
+    marketVariance: (quote - marketExpected) / marketExpected,
+    modelVariance: (quote - modelPredicted) / modelPredicted,
+    percentile: getPercentileRank(quote, simulations.rateDistribution),
+    riskScore: calculateRiskAdjustedScore(quote, simulations),
+    recommendation: getActionRecommendation(riskScore),
+    confidence: simulations.confidence
+  };
+}
+```
+
+**UI Components**:
+```tsx
+- <Card> with quote analysis breakdown
+- <Badge> with color-coded recommendation
+- Gauge chart (D3) for risk score
+- <Accordion> for detailed metrics
+- <AlertDialog> for urgent decisions
+```
+
+### 5.6 Alternative Strategy Simulator
+
+**Purpose**: Evaluate alternatives with full simulation
+
+**Alternative Types**:
+1. **Book Now**: Fixed rate, simulated transit
+2. **Wait Period**: Simulated future rate + transit
+3. **Split Shipment**: Multiple simulations combined
+4. **Alternative Route**: Different parameters entirely
+5. **Different Carrier**: Adjusted distributions
+
+**Comprehensive Alternative Evaluation**:
+```javascript
+async function evaluateAlternatives(currentQuote, params) {
+  const alternatives = [];
+  
+  // Option A: Book Now
+  const bookNow = await simulateBookNow(currentQuote, params);
+  
+  // Option B: Wait 1 Week  
+  const wait1Week = await simulateWait({
+    delay: 7,
+    rateParams: adjustForFuture(params.rateParams, 7),
+    transitParams: adjustCongestion(params.transitParams, 7),
+    inventoryCost: params.holdingCost * 7
+  });
+  
+  // Option C: Split Shipment
+  const split = await simulateSplit({
+    immediate: { portion: 0.3, rate: currentQuote },
+    delayed: { portion: 0.7, ...wait1Week.params }
+  });
+  
+  return rankAlternatives([bookNow, wait1Week, split]);
+}
+```
+
+**UI Components**:
+```tsx
+- <Tabs> for alternative strategies
+- <Card> grid comparing options
+- Parallel coordinates plot (D3) for multi-criteria
+- <BarChart> for cost breakdown by option
+- <Table> with sortable columns
+- <Button> to simulate specific alternative
+- <Collapsible> for detailed assumptions
+```
+
+### 5.7 Visualization Dashboard
+
+**Purpose**: Comprehensive view of all simulations and decisions
+
+**Dashboard Views**:
+
+**A. Executive Summary**
+```tsx
+- KPI cards with current metrics
+- <Alert> for urgent decisions needed
+- Trend sparklines for indices
+- Decision queue with priorities
+```
+
+**B. Rate Analysis View**
+```tsx
+- Histogram of rate distribution
+- <LineChart> with P10/P50/P90 bands
+- Market index overlay
+- Factor contribution breakdown (Tornado chart)
+```
+
+**C. Transit Analysis View**
+```tsx
+- Gantt chart for multi-leg journey
+- Box plots by leg and total
+- Congestion heat map by week
+- Arrival probability calendar
+```
+
+**D. Alternative Comparison Matrix**
+```tsx
+- Spider/Radar chart for multi-criteria
+- Monte Carlo paths visualization
+- Decision tree with probabilities
+- Sensitivity analysis sliders
+```
+
+**E. Risk Dashboard**
+```tsx
+- Risk heat map (rate vs transit)
+- VaR calculations
+- Scenario probability weights
+- Confidence intervals
+```
+
+### 5.8 Continuous Learning Module
+
+**Purpose**: Track predictions vs actuals, auto-calibrate
+
+**Features**:
+```javascript
+trackOutcome(decision) {
+  const actual = {
+    rate: decision.actualRate,
+    transit: decision.actualTransit,
+    delays: decision.actualDelays
+  };
+  
+  const predicted = decision.predictions;
+  const errors = calculateErrors(actual, predicted);
+  
+  if (errors.rateError > 0.1) {
+    recalibrateFactor('laneVolatility', errors.rateError);
+  }
+  
+  updateHistoricalDatabase(decision);
+  generateAccuracyReport();
+}
+```
+
+**UI Components**:
+```tsx
+- <DataTable> with prediction history
+- <LineChart> showing accuracy over time
+- <Card> with calibration suggestions
+- <Dialog> for manual adjustment approval
+- <Toast> for auto-calibration notifications
+```
+
+## 6. User Workflow
+
+### Primary Flow:
+```mermaid
+graph LR
+    A[Configure Lanes] --> B[Set Factors]
+    B --> C[Run Base Simulation]
+    C --> D[Receive Quote]
+    D --> E[Evaluate Quote]
+    E --> F{Decision Point}
+    F -->|Good| G[Book]
+    F -->|Poor| H[Simulate Alternatives]
+    H --> I[Select Strategy]
+    I --> J[Execute]
+    J --> K[Track Outcome]
+    K --> L[Auto-Calibrate]
+```
+
+## 7. Technical Stack
+
+### Core Technologies:
+```json
+{
+  "framework": "Next.js 14 with App Router",
+  "language": "TypeScript",
+  "ui": "shadcn/ui + Tailwind CSS",
+  "state": "Zustand",
+  "charts": "Recharts + D3.js",
+  "computation": "Web Workers",
+  "storage": "IndexedDB for large datasets",
+  "exports": "jsPDF, Papa Parse"
+}
+```
+
+### Key Libraries:
+```bash
+# Core
+next@14 react@18 typescript@5
+
+# UI
+@shadcn/ui tailwindcss lucide-react
+
+# Visualization  
+recharts d3 visx
+
+# Computation
+simple-statistics probability-distributions comlink
+
+# Data
+dexie papaparse jspdf
+```
+
+## 8. Data Models
+
+### Core Entities:
+
+```typescript
+interface LaneConfiguration {
+  id: string;
+  origin: Location;
+  destination: Location;
+  segments: TransitSegment[];
+  indexMapping: IndexMapping;
+  factors: RateFactor[];
+}
+
+interface SimulationResult {
+  id: string;
+  timestamp: Date;
+  iterations: number;
+  rateDistribution: Distribution;
+  transitDistribution: Distribution;
+  alternatives: Alternative[];
+  decision: Decision;
+}
+
+interface Alternative {
+  type: 'book' | 'wait' | 'split' | 'reroute';
+  parameters: AlternativeParams;
+  simulation: SimulationResult;
+  score: RiskAdjustedScore;
+}
+```
+
+## 9. Performance Requirements
+
+### Targets:
+- Initial load: < 2 seconds
+- 10,000 simulations: < 5 seconds
+- Alternative evaluation (5 options): < 10 seconds
+- UI interactions: 60 fps
+- Chart updates: < 300ms
+
+### Optimization Strategies:
+- Web Workers for parallel processing
+- Virtual scrolling for large tables
+- Memoization of expensive calculations
+- Progressive enhancement
+- Lazy loading of chart libraries
+
+## 10. MVP Scope
+
+### Phase 1 (Weeks 1-4):
+✅ Basic lane configuration with indices
+✅ Rate prediction with 3 factors
+✅ Transit simulation (3 legs)
+✅ Quote evaluation scoring
+✅ 2 alternative strategies (book/wait)
+✅ Basic visualizations
+
+### Phase 2 (Weeks 5-8):
+⏳ Full factor library
+⏳ Complex alternatives (split/reroute)
+⏳ Advanced visualizations
+⏳ Calibration system
+⏳ Export capabilities
+
+### Future Phases:
+❌ Real-time market data feeds
+❌ Multi-user collaboration
+❌ API integration
+❌ Mobile app
+❌ ML predictions
+
+## 11. Success Metrics
+
+### Quantitative:
+- Decision time: < 3 minutes (from quote to action)
+- Prediction accuracy: ±8% for rates, ±2 days for transit
+- Cost savings: 5-15% vs baseline decisions
+- Simulation convergence: < 5,000 iterations
+
+### Qualitative:
+- User confidence in recommendations
+- Adoption by logistics teams
+- Reduction in "surprise" delays
+- Improved negotiation positions
+
+## 12. Risk Mitigation
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Browser performance with large simulations | High | Web Workers, streaming results |
+| Complex UX overwhelming users | Medium | Progressive disclosure, tutorials |
+| Accuracy of predictions | High | Continuous calibration, confidence intervals |
+| Data quality issues | Medium | Validation, outlier detection |
+
+## 13. Component Library Structure
+
+### shadcn/ui Components Usage:
+```
+/components
+  /ui (shadcn components)
+    - button.tsx
+    - card.tsx
+    - dialog.tsx
+    - select.tsx
+    - slider.tsx
+    - table.tsx
+    - tabs.tsx
+    - alert.tsx
+    - badge.tsx
+    - progress.tsx
+    
+  /simulation
+    - rate-simulator.tsx
+    - transit-simulator.tsx
+    - alternative-evaluator.tsx
+    
+  /visualization
+    - distribution-chart.tsx
+    - decision-matrix.tsx
+    - risk-heatmap.tsx
+    
+  /decision
+    - quote-analyzer.tsx
+    - recommendation-card.tsx
+    - alternative-comparison.tsx
+```
+
+## 14. Sample User Interface Flow
+
+### Screen 1: Dashboard Home
+```tsx
+<div className="container mx-auto p-6">
+  <Tabs defaultValue="overview">
+    <TabsList>
+      <TabsTrigger value="overview">Overview</TabsTrigger>
+      <TabsTrigger value="configure">Configure</TabsTrigger>
+      <TabsTrigger value="simulate">Simulate</TabsTrigger>
+      <TabsTrigger value="decide">Decide</TabsTrigger>
+    </TabsList>
+    
+    <TabsContent value="overview">
+      <div className="grid grid-cols-4 gap-4">
+        <Card>
+          <CardHeader>SCFI Index</CardHeader>
+          <CardContent>1,200 ↑4.3%</CardContent>
+        </Card>
+        {/* More KPI cards */}
+      </div>
+    </TabsContent>
+  </Tabs>
+</div>
+```
+
+### Screen 2: Quote Evaluation
+```tsx
+<Card>
+  <CardHeader>
+    <CardTitle>Quote Analysis: Shanghai → LA</CardTitle>
+    <Badge variant={score > 0.8 ? "success" : "warning"}>
+      {recommendation}
+    </Badge>
+  </CardHeader>
+  <CardContent>
+    <div className="space-y-4">
+      <Alert>
+        <AlertDescription>
+          Quote is at {percentile}th percentile of expected range
+        </AlertDescription>
+      </Alert>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>Market Expected: ${marketRate}</div>
+        <div>Model Predicted: ${modelRate}</div>
+        <div>Quoted Rate: ${quoteRate}</div>
+        <div>Decision Score: {score}</div>
+      </div>
+      
+      <Button onClick={simulateAlternatives}>
+        Evaluate Alternatives
+      </Button>
+    </div>
+  </CardContent>
+</Card>
+```
+
+---
+
+This PRD provides a complete blueprint for building an integrated rate and transit optimization tool using Monte Carlo simulations, entirely in the frontend with modern React and shadcn/ui components.
