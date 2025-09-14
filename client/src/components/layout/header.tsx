@@ -1,7 +1,13 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Bell, Menu } from "lucide-react";
+import { NotificationPanel } from "@/components/notifications/notification-panel";
 
 export default function Header() {
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const unreadCount = 3; // Mock unread count - in real app this would come from state/API
+
   return (
     <header className="bg-card border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
@@ -16,10 +22,30 @@ export default function Header() {
         </div>
         
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" className="p-2 relative" data-testid="button-notifications">
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full"></span>
-          </Button>
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-2 relative" 
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              data-testid="button-notifications"
+            >
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              {unreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 px-1 py-0.5 text-xs min-w-[18px] h-[18px] flex items-center justify-center"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              )}
+            </Button>
+            
+            <NotificationPanel 
+              isOpen={notificationsOpen} 
+              onClose={() => setNotificationsOpen(false)} 
+            />
+          </div>
           
           <div className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>

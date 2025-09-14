@@ -12,6 +12,7 @@ import Risk from "@/pages/risk";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
+import { FloatingChatbot } from "@/components/chatbot/floating-chatbot";
 
 function Router() {
   return (
@@ -39,6 +40,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <FloatingChatbot />
       </TooltipProvider>
     </QueryClientProvider>
   );
