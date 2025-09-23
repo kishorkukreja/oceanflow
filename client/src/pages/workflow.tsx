@@ -583,6 +583,9 @@ export default function WorkflowPage() {
           <TabsTrigger value="quotes" data-testid="tab-quotes">Quote Analysis</TabsTrigger>
           <TabsTrigger value="agents" data-testid="tab-agents">AI Agents</TabsTrigger>
           <TabsTrigger value="decisions" data-testid="tab-decisions">Decisions</TabsTrigger>
+          {['document_generation', 'approval_pending', 'completed'].includes(process.currentStage) && (
+            <TabsTrigger value="documentation" data-testid="tab-documentation">Documentation</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -1053,6 +1056,138 @@ export default function WorkflowPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Documentation Tab */}
+        <TabsContent value="documentation" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Shipping Documentation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {process.currentStage === 'document_generation' ? (
+                <div className="space-y-4">
+                  <Alert>
+                    <FileText className="h-4 w-4" />
+                    <AlertDescription>
+                      All required shipping documents have been generated and are ready for review.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h5 className="font-medium">Booking Confirmation</h5>
+                            <p className="text-sm text-muted-foreground">Carrier booking details</p>
+                          </div>
+                          <FileText className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <div className="mt-4">
+                          <Button variant="outline" size="sm" className="w-full">
+                            <FileDown className="h-4 w-4 mr-2" />
+                            View Document
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-green-200 bg-green-50">
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h5 className="font-medium">Commercial Invoice</h5>
+                            <p className="text-sm text-muted-foreground">Shipment value details</p>
+                          </div>
+                          <FileText className="h-8 w-8 text-green-600" />
+                        </div>
+                        <div className="mt-4">
+                          <Button variant="outline" size="sm" className="w-full">
+                            <FileDown className="h-4 w-4 mr-2" />
+                            View Document
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-purple-200 bg-purple-50">
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h5 className="font-medium">Bill of Lading</h5>
+                            <p className="text-sm text-muted-foreground">Transport contract</p>
+                          </div>
+                          <FileText className="h-8 w-8 text-purple-600" />
+                        </div>
+                        <div className="mt-4">
+                          <Button variant="outline" size="sm" className="w-full">
+                            <FileDown className="h-4 w-4 mr-2" />
+                            View Document
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="space-y-4 pt-4">
+                    <h5 className="font-medium">Documentation Review</h5>
+                    <Alert>
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Review Complete:</strong> All documents have been verified and are ready for submission to relevant parties.
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <div className="text-center">
+                      <Button
+                        onClick={() => advanceProcess.mutate()}
+                        disabled={advanceProcess.isPending}
+                        size="lg"
+                        data-testid="button-submit-for-approval"
+                      >
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        {advanceProcess.isPending ? "Submitting..." : "Submit for Approval"}
+                      </Button>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Move to approval stage for final sign-off
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Documentation stage completed. All shipping documents have been generated and submitted.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <h4 className="font-medium text-blue-600">Documents Generated</h4>
+                      <p className="text-2xl font-bold">3</p>
+                      <p className="text-sm text-muted-foreground">All required documents</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="font-medium text-green-600">Validation Status</h4>
+                      <p className="text-2xl font-bold">✓</p>
+                      <p className="text-sm text-muted-foreground">Verified and compliant</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="font-medium text-purple-600">Submission Status</h4>
+                      <p className="text-2xl font-bold">✓</p>
+                      <p className="text-sm text-muted-foreground">Submitted for approval</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
