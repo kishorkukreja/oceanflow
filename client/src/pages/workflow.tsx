@@ -22,7 +22,13 @@ import {
   Truck,
   Target,
   Brain,
-  Zap
+  Zap,
+  UserCheck,
+  Database,
+  FileDown,
+  Loader2,
+  ExternalLink,
+  Settings
 } from "lucide-react";
 import type { AutomationProcess, Shipment, VendorEvaluation, Quote } from "@shared/schema";
 
@@ -224,14 +230,30 @@ export default function WorkflowPage() {
     
     // Decision logic: defer vs book
     const shouldDefer = () => {
-      // Defer if best score is below threshold
-      if (bestQuote.decisionScore < 85) return true;
+      // High urgency shipments should almost never be deferred
+      if (shipmentData.urgency === 'high') {
+        // Only defer high urgency if score is extremely low (< 75)
+        return bestQuote.decisionScore < 75;
+      }
       
-      // Defer if all quotes are expensive for low urgency
-      if (shipmentData.urgency === 'low' && bestQuote.rate > 2600) return true;
+      // Medium urgency shipments - normal thresholds
+      if (shipmentData.urgency === 'medium') {
+        // Defer if score is below threshold or rates are very high
+        if (bestQuote.decisionScore < 85) return true;
+        if (!shipmentData.requiredDeliveryDate && bestQuote.rate > 2800) return true;
+        return false;
+      }
       
-      // Defer if delivery is flexible and we can wait for better rates
-      if (!shipmentData.requiredDeliveryDate && bestQuote.rate > 2400) return true;
+      // Low urgency shipments - more flexible on deferring
+      if (shipmentData.urgency === 'low') {
+        // Defer if score is below threshold
+        if (bestQuote.decisionScore < 85) return true;
+        // Defer if rates are expensive
+        if (bestQuote.rate > 2600) return true;
+        // Defer if delivery is flexible and rates are above budget
+        if (!shipmentData.requiredDeliveryDate && bestQuote.rate > 2400) return true;
+        return false;
+      }
       
       return false;
     };
@@ -243,18 +265,21 @@ export default function WorkflowPage() {
     let deferCost = 0;
     
     if (decision === 'defer') {
-      if (bestQuote.decisionScore < 85) {
-        reasoning = 'No quotes meet quality thresholds. Waiting for better options.';
+      if (shipmentData.urgency === 'high' && bestQuote.decisionScore < 75) {
+        reasoning = 'Even with high urgency, no quotes meet minimum quality standards. Immediate attention required.';
+      } else if (bestQuote.decisionScore < 85) {
+        reasoning = 'Quote quality below acceptable thresholds. Waiting for better options.';
       } else if (shipmentData.urgency === 'low' && bestQuote.rate > 2600) {
         reasoning = 'Non-urgent shipment with high rates. Market timing suggests waiting.';
       } else {
-        reasoning = 'Flexible delivery allows waiting for more competitive rates.';
+        reasoning = 'Market analysis suggests waiting for more competitive rates.';
       }
       
       // Calculate estimated defer cost (storage, insurance, etc.)
       deferCost = Math.round(shipmentData.weight * 0.5 + shipmentData.volume * 25); // Weekly cost
     } else {
-      reasoning = `${bestQuote.vendor} selected - ${bestQuote.ai_evaluation.recommendation === 'ACCEPT' ? 'optimal fit' : 'best available option'} for current requirements.`;
+      const urgencyNote = shipmentData.urgency === 'high' ? ' Priority booking due to high urgency.' : '';
+      reasoning = `${bestQuote.vendor} selected - ${bestQuote.ai_evaluation.recommendation === 'ACCEPT' ? 'optimal fit' : 'best available option'} for current requirements.${urgencyNote}`;
     }
     
     return {
@@ -313,6 +338,157 @@ export default function WorkflowPage() {
       toast({
         title: "Error",
         description: "Failed to run decision analysis",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Booking workflow mutations
+  const approveVendorMutation = useMutation({
+    mutationFn: async () => {
+      if (!process) return;
+      
+      // Create process action for vendor approval
+      const actionData = {
+        processId: process.id,
+        actionType: "approve_vendor",
+        actionStatus: "in_progress",
+        actionData: {
+          vendorName: "Premium Ocean Freight",
+          approvedAt: new Date(),
+          approvedBy: "Sarah Chen",
+          approvalNotes: "Vendor meets all requirements with excellent service history"
+        }
+      };
+
+      const response = await apiRequest('POST', '/api/process-actions', actionData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/process-actions'] });
+      toast({
+        title: "Vendor Approved",
+        description: "Premium Ocean Freight has been approved for this shipment"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve vendor",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const integrateOtmMutation = useMutation({
+    mutationFn: async () => {
+      if (!process) return;
+      
+      // Simulate OTM integration
+      const actionData = {
+        processId: process.id,
+        actionType: "integrate_otm",
+        actionStatus: "in_progress",
+        actionData: {
+          otmSystemUrl: "https://otm.oracle.com/logistics",
+          integrationId: `OTM-${Date.now()}`,
+          shipmentReference: shipment?.referenceNumber,
+          carrierCode: "POF-OCEAN",
+          serviceLevel: "FCL-STD",
+          integrationTime: new Date()
+        }
+      };
+
+      // Simulate async processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const response = await apiRequest('POST', '/api/process-actions', actionData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/process-actions'] });
+      toast({
+        title: "OTM Integration Complete",
+        description: "Shipment has been successfully integrated with Oracle Transportation Management"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to integrate with OTM system",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const generateDocsMutation = useMutation({
+    mutationFn: async () => {
+      if (!process || !shipment) return;
+      
+      // Generate multiple shipping documents
+      const documents = [
+        {
+          processId: process.id,
+          documentType: "booking_confirmation",
+          documentName: "Booking Confirmation - Premium Ocean Freight",
+          status: "generated",
+          content: {
+            bookingReference: `POF-${Date.now()}`,
+            vesselName: "Pacific Star",
+            voyageNumber: "PS-2024-015",
+            containerType: "20' Standard",
+            portOfLoading: shipment.origin,
+            portOfDischarge: shipment.destination,
+            etd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            eta: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000)
+          }
+        },
+        {
+          processId: process.id,
+          documentType: "commercial_invoice",
+          documentName: "Commercial Invoice",
+          status: "generated",
+          content: {
+            invoiceNumber: `CI-${Date.now()}`,
+            commodity: shipment.commodity,
+            weight: `${shipment.weight} kg`,
+            volume: `${shipment.volume} m³`,
+            value: "USD 25,000",
+            hsCode: "8471.30.01"
+          }
+        },
+        {
+          processId: process.id,
+          documentType: "bill_of_lading",
+          documentName: "Master Bill of Lading",
+          status: "generated",
+          content: {
+            blNumber: `MBOL-${Date.now()}`,
+            shipper: "Tech Solutions Inc.",
+            consignee: "Global Distribution LLC",
+            notifyParty: "Logistics Coordinator"
+          }
+        }
+      ];
+
+      // Create documents sequentially
+      for (const doc of documents) {
+        await apiRequest('POST', '/api/process-documents', doc);
+      }
+      
+      return documents;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/process-documents'] });
+      toast({
+        title: "Documents Generated",
+        description: "All shipping documents have been generated successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to generate shipping documents",
         variant: "destructive"
       });
     }
@@ -701,16 +877,23 @@ export default function WorkflowPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {process.agentDecision ? (
+              {process.agentDecision || process.currentStage === 'booking_execution' ? (
                 <div className="space-y-4">
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Decision made: <strong className="capitalize">{process.agentDecision}</strong>
+                      Decision made: <strong className="capitalize">
+                        {process.agentDecision || (process.currentStage === 'booking_execution' ? 'book' : 'pending')}
+                      </strong>
+                      {process.deferReason && (
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          {process.deferReason}
+                        </div>
+                      )}
                     </AlertDescription>
                   </Alert>
 
-                  {process.agentDecision === "book" && (
+                  {(process.agentDecision === "book" || process.currentStage === 'booking_execution') && (
                     <div className="space-y-3">
                       <h4 className="font-medium">Recommended Booking</h4>
                       <Card className="border-green-200 bg-green-50">
@@ -728,21 +911,67 @@ export default function WorkflowPage() {
                         </CardContent>
                       </Card>
                       
-                      <div className="flex gap-2 pt-4">
-                        <Button className="flex-1" data-testid="button-approve-vendor">
-                          Approve Vendor
-                        </Button>
-                        <Button variant="outline" className="flex-1" data-testid="button-integrate-otm">
-                          Integrate OTM
-                        </Button>
-                        <Button variant="outline" className="flex-1" data-testid="button-generate-docs">
-                          Generate Documentation
-                        </Button>
+                      <div className="space-y-4 pt-4">
+                        <h5 className="font-medium">Booking Actions</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <Button 
+                            onClick={() => approveVendorMutation.mutate()}
+                            disabled={approveVendorMutation.isPending}
+                            className="flex items-center gap-2"
+                            data-testid="button-approve-vendor"
+                          >
+                            {approveVendorMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <UserCheck className="h-4 w-4" />
+                            )}
+                            {approveVendorMutation.isPending ? "Approving..." : "Approve Vendor"}
+                          </Button>
+                          
+                          <Button 
+                            variant="outline"
+                            onClick={() => integrateOtmMutation.mutate()}
+                            disabled={integrateOtmMutation.isPending}
+                            className="flex items-center gap-2"
+                            data-testid="button-integrate-otm"
+                          >
+                            {integrateOtmMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Database className="h-4 w-4" />
+                            )}
+                            {integrateOtmMutation.isPending ? "Integrating..." : "Integrate OTM"}
+                          </Button>
+                          
+                          <Button 
+                            variant="outline"
+                            onClick={() => generateDocsMutation.mutate()}
+                            disabled={generateDocsMutation.isPending}
+                            className="flex items-center gap-2"
+                            data-testid="button-generate-docs"
+                          >
+                            {generateDocsMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <FileDown className="h-4 w-4" />
+                            )}
+                            {generateDocsMutation.isPending ? "Generating..." : "Generate Docs"}
+                          </Button>
+                        </div>
+                        
+                        <div className="text-sm text-muted-foreground">
+                          <p>Complete these actions to finalize the booking process:</p>
+                          <ul className="list-disc list-inside mt-2 space-y-1">
+                            <li>Vendor approval confirms carrier selection</li>
+                            <li>OTM integration creates shipment in transportation system</li>
+                            <li>Document generation produces required shipping paperwork</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {process.agentDecision === "defer" && (
+                  {(process.agentDecision === "defer" || process.currentStage === 'approval_pending') && process.currentStage !== 'booking_execution' && (
                     <div className="space-y-3">
                       <Alert>
                         <Clock className="h-4 w-4" />
