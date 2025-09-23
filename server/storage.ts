@@ -55,6 +55,7 @@ export interface IStorage {
   getShipment(id: string): Promise<Shipment | undefined>;
   createShipment(shipment: InsertShipment): Promise<Shipment>;
   updateShipment(id: string, updates: Partial<InsertShipment>): Promise<Shipment | undefined>;
+  deleteShipment(id: string): Promise<boolean>;
   
   // Automation Processes
   getAutomationProcesses(): Promise<AutomationProcess[]>;
@@ -441,6 +442,10 @@ export class MemStorage implements IStorage {
     const updated: Shipment = { ...existing, ...updates };
     this.shipments.set(id, updated);
     return updated;
+  }
+
+  async deleteShipment(id: string): Promise<boolean> {
+    return this.shipments.delete(id);
   }
 
   // Automation Process methods

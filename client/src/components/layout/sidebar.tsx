@@ -9,11 +9,13 @@ import {
   FileText, 
   GitBranch, 
   AlertTriangle,
+  Package,
   User
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
+  { name: "Shipment Management", href: "/shipments", icon: Package },
   { name: "Lane Configuration", href: "/lanes", icon: Route },
   { name: "Monte Carlo Simulation", href: "/simulation", icon: Dices },
   { name: "Quote Evaluation", href: "/quotes", icon: FileText },

@@ -256,6 +256,34 @@ export const insertProcessActionSchema = createInsertSchema(processActions).omit
   createdAt: true,
 });
 
+// Frontend schema for shipment creation with proper form coercion
+export const createShipmentSchema = insertShipmentSchema.extend({
+  weight: z.coerce.number().gt(0, "Weight must be greater than 0"),
+  volume: z.coerce.number().gt(0, "Volume must be greater than 0"),
+  requiredDeliveryDate: z.preprocess(
+    (val) => {
+      if (val == null || val === "") return undefined;
+      if (typeof val === "string") return new Date(val);
+      return val;
+    },
+    z.date().optional()
+  ),
+  specialRequirements: z.preprocess(
+    (val) => {
+      if (val == null || val === "") return undefined;
+      if (typeof val === "string") {
+        try {
+          return JSON.parse(val);
+        } catch {
+          return undefined; // Invalid JSON becomes undefined
+        }
+      }
+      return val;
+    },
+    z.any().optional()
+  )
+});
+
 // Types for new entities
 export type Shipment = typeof shipments.$inferSelect;
 export type InsertShipment = z.infer<typeof insertShipmentSchema>;

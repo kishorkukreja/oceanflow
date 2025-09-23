@@ -9,6 +9,7 @@ import Simulation from "@/pages/simulation";
 import Quotes from "@/pages/quotes";
 import Alternatives from "@/pages/alternatives";
 import Risk from "@/pages/risk";
+import Shipments from "@/pages/shipments";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
@@ -27,6 +28,7 @@ function Router() {
           <Route path="/quotes" component={Quotes} />
           <Route path="/alternatives" component={Alternatives} />
           <Route path="/risk" component={Risk} />
+          <Route path="/shipments" component={Shipments} />
           <Route component={NotFound} />
         </Switch>
       </main>
