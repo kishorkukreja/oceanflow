@@ -338,8 +338,8 @@ export default function WorkflowPage() {
 
                 <div className="text-sm text-muted-foreground">
                   <p>Started: {process.createdAt ? new Date(process.createdAt).toLocaleString() : 'N/A'}</p>
-                  {process.processData && typeof process.processData === 'object' && 'lastAdvanced' in process.processData && process.processData.lastAdvanced && (
-                    <p>Last updated: {new Date(process.processData.lastAdvanced as string).toLocaleString()}</p>
+                  {process.processData && typeof process.processData === 'object' && 'lastAdvanced' in process.processData && (
+                    <p>Last updated: {process.processData.lastAdvanced ? new Date(process.processData.lastAdvanced as string).toLocaleString() : 'N/A'}</p>
                   )}
                 </div>
               </div>
