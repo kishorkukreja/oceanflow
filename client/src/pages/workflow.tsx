@@ -28,7 +28,8 @@ import {
   FileDown,
   Loader2,
   ExternalLink,
-  Settings
+  Settings,
+  AlertTriangle
 } from "lucide-react";
 import type { AutomationProcess, Shipment, VendorEvaluation, Quote } from "@shared/schema";
 
@@ -585,6 +586,9 @@ export default function WorkflowPage() {
           <TabsTrigger value="decisions" data-testid="tab-decisions">Decisions</TabsTrigger>
           {['document_generation', 'approval_pending', 'completed'].includes(process.currentStage) && (
             <TabsTrigger value="documentation" data-testid="tab-documentation">Documentation</TabsTrigger>
+          )}
+          {['approval_pending', 'completed'].includes(process.currentStage) && (
+            <TabsTrigger value="approvals" data-testid="tab-approvals">Approvals</TabsTrigger>
           )}
         </TabsList>
 
@@ -1186,6 +1190,175 @@ export default function WorkflowPage() {
                       <p className="text-sm text-muted-foreground">Submitted for approval</p>
                     </div>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Approvals Tab */}
+        <TabsContent value="approvals" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCheck className="h-5 w-5" />
+                Final Approvals
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {process.currentStage === 'approval_pending' ? (
+                <div className="space-y-4">
+                  <Alert>
+                    <Clock className="h-4 w-4" />
+                    <AlertDescription>
+                      Shipment documentation has been submitted and is awaiting final approvals from relevant stakeholders.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-4">
+                    <h5 className="font-medium">Required Approvals</h5>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Card className="border-blue-200 bg-blue-50">
+                        <CardContent className="pt-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h6 className="font-medium">Operations Manager</h6>
+                              <p className="text-sm text-muted-foreground">Logistics approval</p>
+                            </div>
+                            <CheckCircle className="h-8 w-8 text-green-600" />
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-sm text-green-600 font-medium">✓ Approved</p>
+                            <p className="text-xs text-muted-foreground">2 hours ago</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-amber-200 bg-amber-50">
+                        <CardContent className="pt-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h6 className="font-medium">Compliance Officer</h6>
+                              <p className="text-sm text-muted-foreground">Regulatory review</p>
+                            </div>
+                            <Clock className="h-8 w-8 text-amber-600" />
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-sm text-amber-600 font-medium">⏳ Pending</p>
+                            <p className="text-xs text-muted-foreground">In review</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-purple-200 bg-purple-50">
+                        <CardContent className="pt-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h6 className="font-medium">Customer Sign-off</h6>
+                              <p className="text-sm text-muted-foreground">Final authorization</p>
+                            </div>
+                            <Clock className="h-8 w-8 text-purple-600" />
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-sm text-purple-600 font-medium">⏳ Pending</p>
+                            <p className="text-xs text-muted-foreground">Awaiting response</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>2 of 3 approvals pending.</strong> The shipment will proceed to final stages once all stakeholders have provided their approval.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="space-y-4 pt-4">
+                      <h6 className="font-medium">Quick Approval Actions</h6>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <Button 
+                          variant="outline"
+                          className="flex items-center gap-2"
+                          data-testid="button-approve-compliance"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Approve as Compliance Officer
+                        </Button>
+                        
+                        <Button 
+                          variant="outline"
+                          className="flex items-center gap-2"
+                          data-testid="button-approve-customer"
+                        >
+                          <UserCheck className="h-4 w-4" />
+                          Approve as Customer
+                        </Button>
+                      </div>
+                      
+                      <div className="text-center pt-4">
+                        <Button
+                          onClick={() => advanceProcess.mutate()}
+                          disabled={advanceProcess.isPending}
+                          size="lg"
+                          className="bg-green-600 hover:bg-green-700"
+                          data-testid="button-complete-process"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {advanceProcess.isPending ? "Completing..." : "Complete Process"}
+                        </Button>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Finalize the automation workflow
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Process Complete!</strong> All required approvals have been obtained and the shipment automation workflow has been successfully completed.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <h4 className="font-medium text-green-600">Total Approvals</h4>
+                      <p className="text-2xl font-bold">3/3</p>
+                      <p className="text-sm text-muted-foreground">All stakeholders approved</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="font-medium text-blue-600">Process Duration</h4>
+                      <p className="text-2xl font-bold">4.2h</p>
+                      <p className="text-sm text-muted-foreground">Start to completion</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="font-medium text-purple-600">Automation Score</h4>
+                      <p className="text-2xl font-bold">94%</p>
+                      <p className="text-sm text-muted-foreground">Process efficiency</p>
+                    </div>
+                  </div>
+
+                  <Card className="border-green-200 bg-green-50">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h5 className="font-medium text-green-800">Workflow Status</h5>
+                          <p className="text-sm text-green-600">Ready for shipment execution</p>
+                        </div>
+                        <CheckCircle className="h-8 w-8 text-green-600" />
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-sm text-green-700">
+                          The shipment has been fully processed through the agentic automation system. 
+                          All quotes evaluated, decisions made, bookings confirmed, documents generated, and approvals obtained.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
             </CardContent>
