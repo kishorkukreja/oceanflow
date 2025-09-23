@@ -237,7 +237,11 @@ export class MemStorage implements IStorage {
       this.shipments.set(id, {
         ...shipment,
         id,
-        createdAt: new Date()
+        createdAt: new Date(),
+        status: shipment.status || "pending_quotes",
+        urgency: shipment.urgency || "medium",
+        requiredDeliveryDate: shipment.requiredDeliveryDate ?? null,
+        specialRequirements: shipment.specialRequirements ?? null
       });
     });
   }
@@ -421,6 +425,8 @@ export class MemStorage implements IStorage {
       ...shipment, 
       id, 
       createdAt: new Date(),
+      status: shipment.status || "pending_quotes",
+      urgency: shipment.urgency || "medium",
       requiredDeliveryDate: shipment.requiredDeliveryDate ?? null,
       specialRequirements: shipment.specialRequirements ?? null
     };
@@ -456,6 +462,8 @@ export class MemStorage implements IStorage {
       ...process, 
       id, 
       createdAt: new Date(),
+      currentStage: process.currentStage || "quote_collection",
+      quotesCollected: process.quotesCollected || 0,
       agentDecision: process.agentDecision ?? null,
       deferCost: process.deferCost ?? null,
       deferReason: process.deferReason ?? null,
@@ -485,7 +493,7 @@ export class MemStorage implements IStorage {
   }
 
   async getVendorEvaluationsByProcess(processId: string): Promise<VendorEvaluation[]> {
-    return Array.from(this.vendorEvaluations.values()).filter(eval => eval.processId === processId);
+    return Array.from(this.vendorEvaluations.values()).filter(evaluation => evaluation.processId === processId);
   }
 
   async createVendorEvaluation(evaluation: InsertVendorEvaluation): Promise<VendorEvaluation> {
@@ -520,6 +528,7 @@ export class MemStorage implements IStorage {
       ...document, 
       id, 
       createdAt: new Date(),
+      status: document.status || "generated",
       reviewedBy: document.reviewedBy ?? null,
       reviewedAt: document.reviewedAt ?? null
     };
@@ -555,6 +564,7 @@ export class MemStorage implements IStorage {
       ...action, 
       id, 
       createdAt: new Date(),
+      actionStatus: action.actionStatus || "pending",
       actionData: action.actionData ?? null,
       completedAt: action.completedAt ?? null
     };

@@ -1,7 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLaneSchema, insertSimulationSchema, insertQuoteSchema, insertAlternativeSchema, insertMarketIndexSchema, createQuoteSchema } from "@shared/schema";
+import { 
+  insertLaneSchema, insertSimulationSchema, insertQuoteSchema, insertAlternativeSchema, insertMarketIndexSchema, createQuoteSchema,
+  insertShipmentSchema, insertAutomationProcessSchema, insertVendorEvaluationSchema, insertProcessDocumentSchema, insertProcessActionSchema
+} from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Market Indices
@@ -225,6 +228,257 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(alternative);
     } catch (error) {
       res.status(400).json({ error: "Invalid alternative data" });
+    }
+  });
+
+  // Shipments
+  app.get("/api/shipments", async (req, res) => {
+    try {
+      const shipments = await storage.getShipments();
+      res.json(shipments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch shipments" });
+    }
+  });
+
+  app.get("/api/shipments/:id", async (req, res) => {
+    try {
+      const shipment = await storage.getShipment(req.params.id);
+      if (!shipment) {
+        return res.status(404).json({ error: "Shipment not found" });
+      }
+      res.json(shipment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch shipment" });
+    }
+  });
+
+  app.post("/api/shipments", async (req, res) => {
+    try {
+      const data = insertShipmentSchema.parse(req.body);
+      const shipment = await storage.createShipment(data);
+      res.json(shipment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid shipment data" });
+    }
+  });
+
+  app.patch("/api/shipments/:id", async (req, res) => {
+    try {
+      const updates = insertShipmentSchema.partial().parse(req.body);
+      const shipment = await storage.updateShipment(req.params.id, updates);
+      if (!shipment) {
+        return res.status(404).json({ error: "Shipment not found" });
+      }
+      res.json(shipment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid update data" });
+    }
+  });
+
+  // Automation Processes
+  app.get("/api/automation-processes", async (req, res) => {
+    try {
+      const processes = await storage.getAutomationProcesses();
+      res.json(processes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch automation processes" });
+    }
+  });
+
+  app.get("/api/automation-processes/:id", async (req, res) => {
+    try {
+      const process = await storage.getAutomationProcess(req.params.id);
+      if (!process) {
+        return res.status(404).json({ error: "Automation process not found" });
+      }
+      res.json(process);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch automation process" });
+    }
+  });
+
+  app.get("/api/shipments/:shipmentId/automation-process", async (req, res) => {
+    try {
+      const process = await storage.getAutomationProcessByShipment(req.params.shipmentId);
+      if (!process) {
+        return res.status(404).json({ error: "Automation process not found for this shipment" });
+      }
+      res.json(process);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch automation process" });
+    }
+  });
+
+  app.post("/api/automation-processes", async (req, res) => {
+    try {
+      const data = insertAutomationProcessSchema.parse(req.body);
+      const process = await storage.createAutomationProcess(data);
+      res.json(process);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid automation process data" });
+    }
+  });
+
+  app.patch("/api/automation-processes/:id", async (req, res) => {
+    try {
+      const updates = insertAutomationProcessSchema.partial().parse(req.body);
+      const process = await storage.updateAutomationProcess(req.params.id, updates);
+      if (!process) {
+        return res.status(404).json({ error: "Automation process not found" });
+      }
+      res.json(process);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid update data" });
+    }
+  });
+
+  // Vendor Evaluations
+  app.get("/api/vendor-evaluations", async (req, res) => {
+    try {
+      const evaluations = await storage.getVendorEvaluations();
+      res.json(evaluations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch vendor evaluations" });
+    }
+  });
+
+  app.get("/api/vendor-evaluations/:id", async (req, res) => {
+    try {
+      const evaluation = await storage.getVendorEvaluation(req.params.id);
+      if (!evaluation) {
+        return res.status(404).json({ error: "Vendor evaluation not found" });
+      }
+      res.json(evaluation);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch vendor evaluation" });
+    }
+  });
+
+  app.get("/api/automation-processes/:processId/vendor-evaluations", async (req, res) => {
+    try {
+      const evaluations = await storage.getVendorEvaluationsByProcess(req.params.processId);
+      res.json(evaluations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch vendor evaluations" });
+    }
+  });
+
+  app.post("/api/vendor-evaluations", async (req, res) => {
+    try {
+      const data = insertVendorEvaluationSchema.parse(req.body);
+      const evaluation = await storage.createVendorEvaluation(data);
+      res.json(evaluation);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid vendor evaluation data" });
+    }
+  });
+
+  // Process Documents
+  app.get("/api/process-documents", async (req, res) => {
+    try {
+      const documents = await storage.getProcessDocuments();
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch process documents" });
+    }
+  });
+
+  app.get("/api/process-documents/:id", async (req, res) => {
+    try {
+      const document = await storage.getProcessDocument(req.params.id);
+      if (!document) {
+        return res.status(404).json({ error: "Process document not found" });
+      }
+      res.json(document);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch process document" });
+    }
+  });
+
+  app.get("/api/automation-processes/:processId/documents", async (req, res) => {
+    try {
+      const documents = await storage.getProcessDocumentsByProcess(req.params.processId);
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch process documents" });
+    }
+  });
+
+  app.post("/api/process-documents", async (req, res) => {
+    try {
+      const data = insertProcessDocumentSchema.parse(req.body);
+      const document = await storage.createProcessDocument(data);
+      res.json(document);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid process document data" });
+    }
+  });
+
+  app.patch("/api/process-documents/:id", async (req, res) => {
+    try {
+      const updates = insertProcessDocumentSchema.partial().parse(req.body);
+      const document = await storage.updateProcessDocument(req.params.id, updates);
+      if (!document) {
+        return res.status(404).json({ error: "Process document not found" });
+      }
+      res.json(document);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid update data" });
+    }
+  });
+
+  // Process Actions
+  app.get("/api/process-actions", async (req, res) => {
+    try {
+      const actions = await storage.getProcessActions();
+      res.json(actions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch process actions" });
+    }
+  });
+
+  app.get("/api/process-actions/:id", async (req, res) => {
+    try {
+      const action = await storage.getProcessAction(req.params.id);
+      if (!action) {
+        return res.status(404).json({ error: "Process action not found" });
+      }
+      res.json(action);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch process action" });
+    }
+  });
+
+  app.get("/api/automation-processes/:processId/actions", async (req, res) => {
+    try {
+      const actions = await storage.getProcessActionsByProcess(req.params.processId);
+      res.json(actions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch process actions" });
+    }
+  });
+
+  app.post("/api/process-actions", async (req, res) => {
+    try {
+      const data = insertProcessActionSchema.parse(req.body);
+      const action = await storage.createProcessAction(data);
+      res.json(action);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid process action data" });
+    }
+  });
+
+  app.patch("/api/process-actions/:id", async (req, res) => {
+    try {
+      const updates = insertProcessActionSchema.partial().parse(req.body);
+      const action = await storage.updateProcessAction(req.params.id, updates);
+      if (!action) {
+        return res.status(404).json({ error: "Process action not found" });
+      }
+      res.json(action);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid update data" });
     }
   });
 
