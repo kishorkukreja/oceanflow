@@ -10,6 +10,7 @@ import Quotes from "@/pages/quotes";
 import Alternatives from "@/pages/alternatives";
 import Risk from "@/pages/risk";
 import Shipments from "@/pages/shipments";
+import OpenShipments from "@/pages/open-shipments";
 import Workflow from "@/pages/workflow";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
@@ -30,6 +31,7 @@ function Router() {
           <Route path="/alternatives" component={Alternatives} />
           <Route path="/risk" component={Risk} />
           <Route path="/shipments" component={Shipments} />
+          <Route path="/open-shipments" component={OpenShipments} />
           <Route path="/workflow/:shipmentId" component={Workflow} />
           <Route component={NotFound} />
         </Switch>

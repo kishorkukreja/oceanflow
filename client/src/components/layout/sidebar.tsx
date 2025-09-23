@@ -10,12 +10,14 @@ import {
   GitBranch, 
   AlertTriangle,
   Package,
-  User
+  User,
+  Clock
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Shipment Management", href: "/shipments", icon: Package },
+  { name: "Open Shipments", href: "/open-shipments", icon: Clock },
   { name: "Lane Configuration", href: "/lanes", icon: Route },
   { name: "Monte Carlo Simulation", href: "/simulation", icon: Dices },
   { name: "Quote Evaluation", href: "/quotes", icon: FileText },
