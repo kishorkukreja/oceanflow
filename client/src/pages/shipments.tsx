@@ -547,8 +547,7 @@ export default function Shipments() {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                // Navigate to automation workflow page
-                                console.log('Navigate to workflow for shipment:', shipment.id);
+                                window.location.href = `/workflow/${shipment.id}`;
                               }}
                               data-testid={`button-view-workflow-${shipment.id}`}
                             >
