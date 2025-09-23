@@ -173,6 +173,151 @@ export default function WorkflowPage() {
     }
   });
 
+  // Decision Agent Logic
+  const runDecisionAgent = (quotes: typeof syntheticQuotes, shipmentData: Shipment) => {
+    // Calculate weighted scores for each quote
+    const scoredQuotes = quotes.map(quote => {
+      const evaluation = quote.ai_evaluation;
+      
+      // Base score from AI evaluation
+      let totalScore = evaluation.ratingScore;
+      
+      // Urgency factor adjustments
+      if (shipmentData.urgency === 'high') {
+        // Heavily weight transit time for urgent shipments
+        totalScore += (evaluation.fitmentFactors.transitTimeReliability * 0.4);
+        totalScore -= (quote.rate > 2500 ? 5 : 0); // Penalize high costs less for urgent
+      } else if (shipmentData.urgency === 'low') {
+        // Prioritize cost savings for non-urgent shipments
+        totalScore += (evaluation.fitmentFactors.priceCompetitiveness * 0.3);
+        totalScore -= (quote.rate > 2700 ? 10 : 0); // Penalize high costs more
+      }
+      
+      // Delivery date factor
+      if (shipmentData.requiredDeliveryDate) {
+        const daysUntilRequired = Math.ceil(
+          (new Date(shipmentData.requiredDeliveryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        );
+        const transitDays = parseInt(quote.transitTime.split('-')[1]);
+        
+        if (daysUntilRequired < transitDays + 5) {
+          // Tight deadline - prioritize speed
+          totalScore += (evaluation.fitmentFactors.transitTimeReliability * 0.5);
+        }
+      }
+      
+      // Market conditions factor (synthetic logic)
+      const marketVolatilityFactor = 0.15; // Low volatility
+      totalScore += (evaluation.fitmentFactors.carrierReputation * marketVolatilityFactor);
+      
+      return {
+        ...quote,
+        decisionScore: Math.round(totalScore),
+        reasoning: []
+      };
+    });
+    
+    // Find best quote
+    const bestQuote = scoredQuotes.reduce((best, current) => 
+      current.decisionScore > best.decisionScore ? current : best
+    );
+    
+    // Decision logic: defer vs book
+    const shouldDefer = () => {
+      // Defer if best score is below threshold
+      if (bestQuote.decisionScore < 85) return true;
+      
+      // Defer if all quotes are expensive for low urgency
+      if (shipmentData.urgency === 'low' && bestQuote.rate > 2600) return true;
+      
+      // Defer if delivery is flexible and we can wait for better rates
+      if (!shipmentData.requiredDeliveryDate && bestQuote.rate > 2400) return true;
+      
+      return false;
+    };
+    
+    const decision = shouldDefer() ? 'defer' : 'book';
+    
+    // Generate decision reasoning
+    let reasoning = '';
+    let deferCost = 0;
+    
+    if (decision === 'defer') {
+      if (bestQuote.decisionScore < 85) {
+        reasoning = 'No quotes meet quality thresholds. Waiting for better options.';
+      } else if (shipmentData.urgency === 'low' && bestQuote.rate > 2600) {
+        reasoning = 'Non-urgent shipment with high rates. Market timing suggests waiting.';
+      } else {
+        reasoning = 'Flexible delivery allows waiting for more competitive rates.';
+      }
+      
+      // Calculate estimated defer cost (storage, insurance, etc.)
+      deferCost = Math.round(shipmentData.weight * 0.5 + shipmentData.volume * 25); // Weekly cost
+    } else {
+      reasoning = `${bestQuote.vendor} selected - ${bestQuote.ai_evaluation.recommendation === 'ACCEPT' ? 'optimal fit' : 'best available option'} for current requirements.`;
+    }
+    
+    return {
+      decision,
+      reasoning,
+      deferCost,
+      selectedQuote: decision === 'book' ? bestQuote : null,
+      scoredQuotes,
+      decisionFactors: {
+        urgencyWeight: shipmentData.urgency === 'high' ? 'High' : shipmentData.urgency === 'medium' ? 'Medium' : 'Low',
+        timeConstraints: shipmentData.requiredDeliveryDate ? 'Fixed deadline' : 'Flexible',
+        marketConditions: 'Stable rates, low volatility',
+        riskTolerance: 'Medium',
+        bestScore: bestQuote.decisionScore
+      }
+    };
+  };
+
+  const makeDecisionMutation = useMutation({
+    mutationFn: async () => {
+      if (!process || !shipment) return;
+      
+      // Run decision agent
+      const decisionResult = runDecisionAgent(syntheticQuotes, shipment);
+      
+      // Update automation process with decision
+      const updates = {
+        agentDecision: decisionResult.decision,
+        deferCost: decisionResult.deferCost,
+        deferReason: decisionResult.reasoning,
+        currentStage: decisionResult.decision === 'book' ? 'booking_execution' : 'approval_pending',
+        processData: {
+          ...(process.processData || {}),
+          decisionMade: new Date(),
+          decisionFactors: decisionResult.decisionFactors,
+          selectedQuote: decisionResult.selectedQuote,
+          scoredQuotes: decisionResult.scoredQuotes.map(q => ({
+            vendor: q.vendor,
+            rate: q.rate,
+            decisionScore: q.decisionScore
+          }))
+        }
+      };
+
+      const response = await apiRequest('PATCH', `/api/automation-processes/${process.id}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/automation-processes'] });
+      toast({
+        title: "Decision Made",
+        description: "The decision agent has analyzed all factors and made a recommendation"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to run decision analysis",
+        variant: "destructive"
+      });
+    }
+  });
+
   if (shipmentLoading) {
     return <div className="p-6">Loading workflow...</div>;
   }
@@ -626,12 +771,31 @@ export default function WorkflowPage() {
                   )}
                 </div>
               ) : (
-                <Alert>
-                  <Clock className="h-4 w-4" />
-                  <AlertDescription>
-                    Decision analysis in progress. The decision agent is evaluating all quotes and agent recommendations.
-                  </AlertDescription>
-                </Alert>
+                <div className="space-y-4">
+                  <Alert>
+                    <Clock className="h-4 w-4" />
+                    <AlertDescription>
+                      Decision analysis ready. The decision agent will evaluate all quotes and agent recommendations.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  {process.currentStage === 'decision_analysis' && (
+                    <div className="text-center">
+                      <Button
+                        onClick={() => makeDecisionMutation.mutate()}
+                        disabled={makeDecisionMutation.isPending}
+                        size="lg"
+                        data-testid="button-run-decision-agent"
+                      >
+                        <Brain className="h-4 w-4 mr-2" />
+                        {makeDecisionMutation.isPending ? "Analyzing..." : "Run Decision Agent"}
+                      </Button>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        AI will analyze quotes, urgency, market conditions, and delivery requirements
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="pt-4">
