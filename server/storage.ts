@@ -1,4 +1,16 @@
-import { type Lane, type InsertLane, type Simulation, type InsertSimulation, type Quote, type InsertQuote, type Alternative, type InsertAlternative, type MarketIndex, type InsertMarketIndex, type User, type InsertUser } from "@shared/schema";
+import { 
+  type Lane, type InsertLane, 
+  type Simulation, type InsertSimulation, 
+  type Quote, type InsertQuote, 
+  type Alternative, type InsertAlternative, 
+  type MarketIndex, type InsertMarketIndex, 
+  type User, type InsertUser,
+  type Shipment, type InsertShipment,
+  type AutomationProcess, type InsertAutomationProcess,
+  type VendorEvaluation, type InsertVendorEvaluation,
+  type ProcessDocument, type InsertProcessDocument,
+  type ProcessAction, type InsertProcessAction
+} from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -37,6 +49,39 @@ export interface IStorage {
   getMarketIndices(): Promise<MarketIndex[]>;
   getMarketIndex(code: string): Promise<MarketIndex | undefined>;
   createOrUpdateMarketIndex(index: InsertMarketIndex): Promise<MarketIndex>;
+  
+  // Shipments
+  getShipments(): Promise<Shipment[]>;
+  getShipment(id: string): Promise<Shipment | undefined>;
+  createShipment(shipment: InsertShipment): Promise<Shipment>;
+  updateShipment(id: string, updates: Partial<InsertShipment>): Promise<Shipment | undefined>;
+  
+  // Automation Processes
+  getAutomationProcesses(): Promise<AutomationProcess[]>;
+  getAutomationProcess(id: string): Promise<AutomationProcess | undefined>;
+  getAutomationProcessByShipment(shipmentId: string): Promise<AutomationProcess | undefined>;
+  createAutomationProcess(process: InsertAutomationProcess): Promise<AutomationProcess>;
+  updateAutomationProcess(id: string, updates: Partial<InsertAutomationProcess>): Promise<AutomationProcess | undefined>;
+  
+  // Vendor Evaluations
+  getVendorEvaluations(): Promise<VendorEvaluation[]>;
+  getVendorEvaluation(id: string): Promise<VendorEvaluation | undefined>;
+  getVendorEvaluationsByProcess(processId: string): Promise<VendorEvaluation[]>;
+  createVendorEvaluation(evaluation: InsertVendorEvaluation): Promise<VendorEvaluation>;
+  
+  // Process Documents
+  getProcessDocuments(): Promise<ProcessDocument[]>;
+  getProcessDocument(id: string): Promise<ProcessDocument | undefined>;
+  getProcessDocumentsByProcess(processId: string): Promise<ProcessDocument[]>;
+  createProcessDocument(document: InsertProcessDocument): Promise<ProcessDocument>;
+  updateProcessDocument(id: string, updates: Partial<InsertProcessDocument>): Promise<ProcessDocument | undefined>;
+  
+  // Process Actions
+  getProcessActions(): Promise<ProcessAction[]>;
+  getProcessAction(id: string): Promise<ProcessAction | undefined>;
+  getProcessActionsByProcess(processId: string): Promise<ProcessAction[]>;
+  createProcessAction(action: InsertProcessAction): Promise<ProcessAction>;
+  updateProcessAction(id: string, updates: Partial<InsertProcessAction>): Promise<ProcessAction | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -46,6 +91,11 @@ export class MemStorage implements IStorage {
   private quotes: Map<string, Quote> = new Map();
   private alternatives: Map<string, Alternative> = new Map();
   private marketIndices: Map<string, MarketIndex> = new Map();
+  private shipments: Map<string, Shipment> = new Map();
+  private automationProcesses: Map<string, AutomationProcess> = new Map();
+  private vendorEvaluations: Map<string, VendorEvaluation> = new Map();
+  private processDocuments: Map<string, ProcessDocument> = new Map();
+  private processActions: Map<string, ProcessAction> = new Map();
 
   constructor() {
     this.initializeDefaultData();
@@ -127,6 +177,65 @@ export class MemStorage implements IStorage {
       const id = randomUUID();
       this.lanes.set(id, {
         ...lane,
+        id,
+        createdAt: new Date()
+      });
+    });
+
+    // Initialize sample shipments for agentic process automation demo
+    const sampleShipments: InsertShipment[] = [
+      {
+        referenceNumber: "SHP-2024-001",
+        origin: "Shanghai",
+        destination: "Los Angeles",
+        commodity: "Electronics Components",
+        weight: 2500,
+        volume: 45.5,
+        urgency: "high",
+        requiredDeliveryDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000), // 21 days from now
+        specialRequirements: {
+          temperature_controlled: true,
+          fragile_handling: true,
+          customs_clearance: "express"
+        },
+        status: "pending_quotes"
+      },
+      {
+        referenceNumber: "SHP-2024-002",
+        origin: "Hong Kong",
+        destination: "New York",
+        commodity: "Fashion Accessories",
+        weight: 1200,
+        volume: 28.3,
+        urgency: "medium",
+        requiredDeliveryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        specialRequirements: {
+          insurance_required: true,
+          documentation: "full_set"
+        },
+        status: "evaluating"
+      },
+      {
+        referenceNumber: "SHP-2024-003",
+        origin: "Singapore",
+        destination: "Long Beach",
+        commodity: "Automotive Parts",
+        weight: 3800,
+        volume: 62.7,
+        urgency: "medium",
+        requiredDeliveryDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000), // 25 days from now
+        specialRequirements: {
+          hazmat_compliance: true,
+          just_in_time: true
+        },
+        status: "decision_pending"
+      }
+    ];
+
+    sampleShipments.forEach(shipment => {
+      const id = randomUUID();
+      this.shipments.set(id, {
+        ...shipment,
         id,
         createdAt: new Date()
       });
@@ -294,6 +403,171 @@ export class MemStorage implements IStorage {
       lastUpdated: new Date()
     };
     this.marketIndices.set(index.code, updated);
+    return updated;
+  }
+
+  // Shipment methods
+  async getShipments(): Promise<Shipment[]> {
+    return Array.from(this.shipments.values());
+  }
+
+  async getShipment(id: string): Promise<Shipment | undefined> {
+    return this.shipments.get(id);
+  }
+
+  async createShipment(shipment: InsertShipment): Promise<Shipment> {
+    const id = randomUUID();
+    const newShipment: Shipment = { 
+      ...shipment, 
+      id, 
+      createdAt: new Date(),
+      requiredDeliveryDate: shipment.requiredDeliveryDate ?? null,
+      specialRequirements: shipment.specialRequirements ?? null
+    };
+    this.shipments.set(id, newShipment);
+    return newShipment;
+  }
+
+  async updateShipment(id: string, updates: Partial<InsertShipment>): Promise<Shipment | undefined> {
+    const existing = this.shipments.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Shipment = { ...existing, ...updates };
+    this.shipments.set(id, updated);
+    return updated;
+  }
+
+  // Automation Process methods
+  async getAutomationProcesses(): Promise<AutomationProcess[]> {
+    return Array.from(this.automationProcesses.values());
+  }
+
+  async getAutomationProcess(id: string): Promise<AutomationProcess | undefined> {
+    return this.automationProcesses.get(id);
+  }
+
+  async getAutomationProcessByShipment(shipmentId: string): Promise<AutomationProcess | undefined> {
+    return Array.from(this.automationProcesses.values()).find(process => process.shipmentId === shipmentId);
+  }
+
+  async createAutomationProcess(process: InsertAutomationProcess): Promise<AutomationProcess> {
+    const id = randomUUID();
+    const newProcess: AutomationProcess = { 
+      ...process, 
+      id, 
+      createdAt: new Date(),
+      agentDecision: process.agentDecision ?? null,
+      deferCost: process.deferCost ?? null,
+      deferReason: process.deferReason ?? null,
+      processData: process.processData ?? null,
+      completedAt: process.completedAt ?? null
+    };
+    this.automationProcesses.set(id, newProcess);
+    return newProcess;
+  }
+
+  async updateAutomationProcess(id: string, updates: Partial<InsertAutomationProcess>): Promise<AutomationProcess | undefined> {
+    const existing = this.automationProcesses.get(id);
+    if (!existing) return undefined;
+    
+    const updated: AutomationProcess = { ...existing, ...updates };
+    this.automationProcesses.set(id, updated);
+    return updated;
+  }
+
+  // Vendor Evaluation methods
+  async getVendorEvaluations(): Promise<VendorEvaluation[]> {
+    return Array.from(this.vendorEvaluations.values());
+  }
+
+  async getVendorEvaluation(id: string): Promise<VendorEvaluation | undefined> {
+    return this.vendorEvaluations.get(id);
+  }
+
+  async getVendorEvaluationsByProcess(processId: string): Promise<VendorEvaluation[]> {
+    return Array.from(this.vendorEvaluations.values()).filter(eval => eval.processId === processId);
+  }
+
+  async createVendorEvaluation(evaluation: InsertVendorEvaluation): Promise<VendorEvaluation> {
+    const id = randomUUID();
+    const newEvaluation: VendorEvaluation = { 
+      ...evaluation, 
+      id, 
+      evaluatedAt: new Date(),
+      strengths: evaluation.strengths ?? null,
+      concerns: evaluation.concerns ?? null
+    };
+    this.vendorEvaluations.set(id, newEvaluation);
+    return newEvaluation;
+  }
+
+  // Process Document methods
+  async getProcessDocuments(): Promise<ProcessDocument[]> {
+    return Array.from(this.processDocuments.values());
+  }
+
+  async getProcessDocument(id: string): Promise<ProcessDocument | undefined> {
+    return this.processDocuments.get(id);
+  }
+
+  async getProcessDocumentsByProcess(processId: string): Promise<ProcessDocument[]> {
+    return Array.from(this.processDocuments.values()).filter(doc => doc.processId === processId);
+  }
+
+  async createProcessDocument(document: InsertProcessDocument): Promise<ProcessDocument> {
+    const id = randomUUID();
+    const newDocument: ProcessDocument = { 
+      ...document, 
+      id, 
+      createdAt: new Date(),
+      reviewedBy: document.reviewedBy ?? null,
+      reviewedAt: document.reviewedAt ?? null
+    };
+    this.processDocuments.set(id, newDocument);
+    return newDocument;
+  }
+
+  async updateProcessDocument(id: string, updates: Partial<InsertProcessDocument>): Promise<ProcessDocument | undefined> {
+    const existing = this.processDocuments.get(id);
+    if (!existing) return undefined;
+    
+    const updated: ProcessDocument = { ...existing, ...updates };
+    this.processDocuments.set(id, updated);
+    return updated;
+  }
+
+  // Process Action methods
+  async getProcessActions(): Promise<ProcessAction[]> {
+    return Array.from(this.processActions.values());
+  }
+
+  async getProcessAction(id: string): Promise<ProcessAction | undefined> {
+    return this.processActions.get(id);
+  }
+
+  async getProcessActionsByProcess(processId: string): Promise<ProcessAction[]> {
+    return Array.from(this.processActions.values()).filter(action => action.processId === processId);
+  }
+
+  async createProcessAction(action: InsertProcessAction): Promise<ProcessAction> {
+    const id = randomUUID();
+    const newAction: ProcessAction = { 
+      ...action, 
+      id, 
+      createdAt: new Date(),
+      actionData: action.actionData ?? null,
+      completedAt: action.completedAt ?? null
+    };
+    this.processActions.set(id, newAction);
+    return newAction;
+  }
+
+  async updateProcessAction(id: string, updates: Partial<InsertProcessAction>): Promise<ProcessAction | undefined> {
+    const existing = this.processActions.get(id);
+    if (!existing) return undefined;
+    
+    const updated: ProcessAction = { ...existing, ...updates };
+    this.processActions.set(id, updated);
     return updated;
   }
 }

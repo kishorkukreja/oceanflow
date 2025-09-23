@@ -163,3 +163,136 @@ export interface QuoteEvaluation {
   recommendation: 'BOOK_NOW' | 'WAIT' | 'NEGOTIATE' | 'REJECT';
   confidence: number;
 }
+
+// New tables for agentic process automation
+
+export const shipments = pgTable("shipments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: text("reference_number").notNull().unique(),
+  origin: text("origin").notNull(),
+  destination: text("destination").notNull(),
+  commodity: text("commodity").notNull(),
+  weight: real("weight").notNull(),
+  volume: real("volume").notNull(),
+  urgency: text("urgency").notNull().default("medium"), // low, medium, high
+  requiredDeliveryDate: timestamp("required_delivery_date"),
+  specialRequirements: jsonb("special_requirements"),
+  status: text("status").notNull().default("pending_quotes"), // pending_quotes, evaluating, decision_pending, booked, deferred, released
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const automationProcesses = pgTable("automation_processes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  shipmentId: varchar("shipment_id").references(() => shipments.id).notNull(),
+  currentStage: text("current_stage").notNull().default("quote_collection"), 
+  // Stages: quote_collection, agent_evaluation, decision_analysis, booking_execution, document_generation, approval_pending, completed
+  quotesCollected: integer("quotes_collected").notNull().default(0),
+  agentDecision: text("agent_decision"), // defer, book
+  deferCost: real("defer_cost"),
+  deferReason: text("defer_reason"),
+  processData: jsonb("process_data"), // Store various process-specific data
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const vendorEvaluations = pgTable("vendor_evaluations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  processId: varchar("process_id").references(() => automationProcesses.id).notNull(),
+  quoteId: varchar("quote_id").references(() => quotes.id).notNull(),
+  agentName: text("agent_name").notNull(), // "Fitment Evaluation Agent"
+  ratingScore: real("rating_score").notNull(), // 0-100 score
+  fitmentFactors: jsonb("fitment_factors").notNull(), // Details of what was evaluated
+  strengths: text("strengths").array(),
+  concerns: text("concerns").array(),
+  recommendation: text("recommendation").notNull(), // ACCEPT, REJECT, CONDITIONAL
+  evaluatedAt: timestamp("evaluated_at").defaultNow(),
+});
+
+export const processDocuments = pgTable("process_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  processId: varchar("process_id").references(() => automationProcesses.id).notNull(),
+  documentType: text("document_type").notNull(), // booking_confirmation, commercial_invoice, bill_of_lading, customs_declaration
+  documentName: text("document_name").notNull(),
+  status: text("status").notNull().default("generated"), // generated, reviewed, approved, rejected
+  content: jsonb("content").notNull(), // Document data/metadata
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const processActions = pgTable("process_actions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  processId: varchar("process_id").references(() => automationProcesses.id).notNull(),
+  actionType: text("action_type").notNull(), // integrate_otm, approve_vendor, initiate_documentation, set_pickup_date
+  actionStatus: text("action_status").notNull().default("pending"), // pending, in_progress, completed, failed
+  actionData: jsonb("action_data"), // Action-specific data
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas for new tables
+export const insertShipmentSchema = createInsertSchema(shipments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAutomationProcessSchema = createInsertSchema(automationProcesses).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertVendorEvaluationSchema = createInsertSchema(vendorEvaluations).omit({
+  id: true,
+  evaluatedAt: true,
+});
+
+export const insertProcessDocumentSchema = createInsertSchema(processDocuments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertProcessActionSchema = createInsertSchema(processActions).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types for new entities
+export type Shipment = typeof shipments.$inferSelect;
+export type InsertShipment = z.infer<typeof insertShipmentSchema>;
+export type AutomationProcess = typeof automationProcesses.$inferSelect;
+export type InsertAutomationProcess = z.infer<typeof insertAutomationProcessSchema>;
+export type VendorEvaluation = typeof vendorEvaluations.$inferSelect;
+export type InsertVendorEvaluation = z.infer<typeof insertVendorEvaluationSchema>;
+export type ProcessDocument = typeof processDocuments.$inferSelect;
+export type InsertProcessDocument = z.infer<typeof insertProcessDocumentSchema>;
+export type ProcessAction = typeof processActions.$inferSelect;
+export type InsertProcessAction = z.infer<typeof insertProcessActionSchema>;
+
+// Additional interfaces for the agentic workflow
+export interface AgentFitmentFactors {
+  priceScore: number; // 0-100
+  transitTimeScore: number; // 0-100
+  carrierReliabilityScore: number; // 0-100
+  capacityAvailabilityScore: number; // 0-100
+  serviceQualityScore: number; // 0-100
+  complianceScore: number; // 0-100
+}
+
+export interface DecisionAgentAnalysis {
+  totalQuotesEvaluated: number;
+  averageFitmentScore: number;
+  topRecommendedQuote: string; // quote ID
+  riskAssessment: 'LOW' | 'MEDIUM' | 'HIGH';
+  deferAnalysis?: {
+    estimatedSavings: number;
+    holdingCosts: number;
+    marketTrend: 'IMPROVING' | 'STABLE' | 'DETERIORATING';
+    recommendedWaitDays: number;
+  };
+  bookingAnalysis?: {
+    selectedVendor: string;
+    totalCost: number;
+    expectedDeliveryDate: Date;
+    riskFactors: string[];
+  };
+}
