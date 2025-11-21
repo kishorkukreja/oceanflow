@@ -1,14 +1,21 @@
 import { storage } from './storage';
 
 export async function initializeData() {
-  // Check if already initialized
-  const existingLanes = await storage.getLanes();
-  if (existingLanes.length > 0) {
-    console.log('✅ Data already initialized');
-    return;
-  }
+  try {
+    // Check if already initialized
+    const existingLanes = await storage.getLanes();
+    console.log(`[Init] Found ${existingLanes.length} existing lanes`);
 
-  console.log('🌱 Initializing default data...');
+    if (existingLanes.length > 0) {
+      console.log('✅ Data already initialized');
+      return;
+    }
+
+    console.log('🌱 Initializing default data...');
+  } catch (error) {
+    console.error('[Init] Error checking existing data:', error);
+    console.log('🌱 Proceeding with initialization...');
+  }
 
   // Add Market Indices
   await storage.createOrUpdateMarketIndex({
@@ -111,4 +118,9 @@ export async function initializeData() {
   });
 
   console.log('✅ Default data initialized successfully!');
+
+  // Verify initialization
+  const lanesCount = (await storage.getLanes()).length;
+  const indicesCount = (await storage.getMarketIndices()).length;
+  console.log(`[Init] Verification - Lanes: ${lanesCount}, Indices: ${indicesCount}`);
 }

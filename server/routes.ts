@@ -7,22 +7,32 @@ import {
   insertShipmentSchema, insertAutomationProcessSchema, insertVendorEvaluationSchema, insertProcessDocumentSchema, insertProcessActionSchema
 } from "@shared/schema";
 
+let isInitialized = false;
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
+    const lanesCount = await storage.getLanes().then(l => l.length).catch(() => 0);
+    const indicesCount = await storage.getMarketIndices().then(i => i.length).catch(() => 0);
+
     res.json({
       status: "ok",
-      hasDatabaseUrl: !!process.env.DATABASE_URL,
-      storageType: process.env.DATABASE_URL ? "database" : "in-memory",
+      initialized: isInitialized,
+      storageType: "in-memory",
+      dataCount: { lanes: lanesCount, indices: indicesCount },
       timestamp: new Date().toISOString()
     });
   });
 
-  // Initialize default data
+  // Initialize default data BEFORE setting up routes
+  console.log('[Server] Starting data initialization...');
   try {
     await initializeData();
+    isInitialized = true;
+    console.log('[Server] Data initialization complete');
   } catch (error) {
-    console.error('Failed to initialize data:', error);
+    console.error('[Server] CRITICAL: Failed to initialize data:', error);
+    throw error; // Don't continue if initialization fails
   }
 
   // Market Indices
