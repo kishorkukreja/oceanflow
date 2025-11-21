@@ -15,24 +15,24 @@ export async function initializeData() {
     code: 'SCFI',
     name: 'Shanghai Containerized Freight Index',
     value: 1245.5,
-    category: 'container',
-    updatedAt: new Date()
+    change: -28.3,
+    changePercent: -2.2
   });
 
   await storage.createOrUpdateMarketIndex({
     code: 'WCI',
     name: 'World Container Index',
     value: 2890.3,
-    category: 'container',
-    updatedAt: new Date()
+    change: 45.7,
+    changePercent: 1.6
   });
 
   await storage.createOrUpdateMarketIndex({
     code: 'BDI',
     name: 'Baltic Dry Index',
     value: 1567.8,
-    category: 'bulk',
-    updatedAt: new Date()
+    change: -15.2,
+    changePercent: -0.96
   });
 
   // Add Shipping Lanes
@@ -101,17 +101,13 @@ export async function initializeData() {
     referenceNumber: 'SHP-2024-001',
     origin: 'Shanghai',
     destination: 'Los Angeles',
-    cargoDetails: {
-      description: 'Electronics - Consumer Goods',
-      weight: 15000,
-      volume: 35,
-      containers: 2
-    },
+    commodity: 'Electronics - Consumer Goods',
+    weight: 15000,
+    volume: 35,
     urgency: 'medium',
     specialRequirements: ['temperature_controlled', 'fragile'],
-    status: 'pending',
-    estimatedDeparture: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    estimatedArrival: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000)
+    status: 'pending_quotes',
+    requiredDeliveryDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000)
   });
 
   console.log('✅ Default data initialized successfully!');

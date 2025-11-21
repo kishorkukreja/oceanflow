@@ -1,9 +1,9 @@
-import { 
-  type Lane, type InsertLane, 
-  type Simulation, type InsertSimulation, 
-  type Quote, type InsertQuote, 
-  type Alternative, type InsertAlternative, 
-  type MarketIndex, type InsertMarketIndex, 
+import {
+  type Lane, type InsertLane,
+  type Simulation, type InsertSimulation,
+  type Quote, type InsertQuote,
+  type Alternative, type InsertAlternative,
+  type MarketIndex, type InsertMarketIndex,
   type User, type InsertUser,
   type Shipment, type InsertShipment,
   type AutomationProcess, type InsertAutomationProcess,
@@ -12,6 +12,7 @@ import {
   type ProcessAction, type InsertProcessAction
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { DbStorage } from './db-storage';
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -587,4 +588,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Use database storage if DATABASE_URL is available, otherwise use in-memory storage
+export const storage = process.env.DATABASE_URL
+  ? new DbStorage(process.env.DATABASE_URL)
+  : new MemStorage();
