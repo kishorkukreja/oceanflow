@@ -396,12 +396,20 @@ app.patch("/api/process-actions/:id", (req, res) => {
 
 // Simulations
 app.get("/api/simulations", (req, res) => {
-  console.log('[Vercel] GET /api/simulations');
-  res.json((storage as any).simulations || []);
+  initData(); // Ensure data is initialized
+  console.log('[Vercel] GET /api/simulations - Count:', storage.simulations.length);
+  const laneId = req.query.laneId;
+  if (laneId) {
+    const filtered = storage.simulations.filter((s: any) => s.laneId === laneId);
+    console.log('[Vercel] Filtered simulations for lane', laneId, ':', filtered.length);
+    return res.json(filtered);
+  }
+  res.json(storage.simulations);
 });
 
 app.post("/api/simulations", (req, res) => {
   try {
+    initData(); // Ensure data is initialized
     console.log('[Vercel] POST /api/simulations:', req.body);
     const simulation = {
       id: String(Date.now()),
@@ -409,8 +417,8 @@ app.post("/api/simulations", (req, res) => {
       status: 'pending',
       createdAt: new Date()
     };
-    if (!(storage as any).simulations) (storage as any).simulations = [];
-    (storage as any).simulations.push(simulation);
+    storage.simulations.push(simulation);
+    console.log('[Vercel] Simulation created with ID:', simulation.id, 'Total:', storage.simulations.length);
     res.status(201).json(simulation);
   } catch (error) {
     console.error('[Vercel] Error creating simulation:', error);
@@ -429,17 +437,30 @@ app.get("/api/simulations/:id", (req, res) => {
 
 app.patch("/api/simulations/:id", (req, res) => {
   try {
-    const simulations = (storage as any).simulations || [];
-    const index = simulations.findIndex((s: any) => s.id === req.params.id);
+    initData(); // Ensure data is initialized
+    console.log('[Vercel] PATCH /api/simulations/:id -', req.params.id);
+    const index = storage.simulations.findIndex((s: any) => s.id === req.params.id);
+
     if (index === -1) {
-      return res.status(404).json({ error: 'Simulation not found' });
+      console.log('[Vercel] Simulation not found, creating it');
+      // Auto-create if not found (serverless workaround)
+      const simulation = {
+        id: req.params.id,
+        ...req.body,
+        createdAt: new Date()
+      };
+      storage.simulations.push(simulation);
+      return res.json(simulation);
     }
-    simulations[index] = {
-      ...simulations[index],
+
+    storage.simulations[index] = {
+      ...storage.simulations[index],
       ...req.body
     };
-    res.json(simulations[index]);
+    console.log('[Vercel] Simulation updated:', storage.simulations[index].id);
+    res.json(storage.simulations[index]);
   } catch (error) {
+    console.error('[Vercel] Error updating simulation:', error);
     res.status(500).json({ error: 'Failed to update simulation' });
   }
 });
