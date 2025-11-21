@@ -142,6 +142,14 @@ function initData() {
 
   storage.processes = [];
 
+  // Initialize additional storage
+  (storage as any).simulations = [];
+  (storage as any).quotes = [];
+  (storage as any).alternatives = [];
+  (storage as any).vendorEvaluations = [];
+  (storage as any).processDocuments = [];
+  (storage as any).processActions = [];
+
   initialized = true;
   console.log('[Vercel] Data initialized - Lanes:', storage.lanes.length, 'Indices:', storage.indices.length);
 }
@@ -316,7 +324,13 @@ app.post("/api/process-documents", (req, res) => {
 
 // Process Actions
 app.get("/api/process-actions", (req, res) => {
-  res.json([]);
+  const processId = req.query.processId;
+  if (processId) {
+    const actions = ((storage as any).processActions || [])
+      .filter((a: any) => a.processId === processId);
+    return res.json(actions);
+  }
+  res.json((storage as any).processActions || []);
 });
 
 app.post("/api/process-actions", (req, res) => {
@@ -326,10 +340,221 @@ app.post("/api/process-actions", (req, res) => {
       ...req.body,
       createdAt: new Date()
     };
+    if (!(storage as any).processActions) (storage as any).processActions = [];
+    (storage as any).processActions.push(action);
     res.status(201).json(action);
   } catch (error) {
     res.status(500).json({ error: 'Failed to create action' });
   }
+});
+
+app.patch("/api/process-actions/:id", (req, res) => {
+  try {
+    const actions = (storage as any).processActions || [];
+    const index = actions.findIndex((a: any) => a.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Action not found' });
+    }
+    actions[index] = {
+      ...actions[index],
+      ...req.body,
+      updatedAt: new Date()
+    };
+    res.json(actions[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update action' });
+  }
+});
+
+// Simulations
+app.get("/api/simulations", (req, res) => {
+  console.log('[Vercel] GET /api/simulations');
+  res.json((storage as any).simulations || []);
+});
+
+app.post("/api/simulations", (req, res) => {
+  try {
+    console.log('[Vercel] POST /api/simulations:', req.body);
+    const simulation = {
+      id: String(Date.now()),
+      ...req.body,
+      status: 'pending',
+      createdAt: new Date()
+    };
+    if (!(storage as any).simulations) (storage as any).simulations = [];
+    (storage as any).simulations.push(simulation);
+    res.status(201).json(simulation);
+  } catch (error) {
+    console.error('[Vercel] Error creating simulation:', error);
+    res.status(500).json({ error: 'Failed to create simulation' });
+  }
+});
+
+app.get("/api/simulations/:id", (req, res) => {
+  const simulations = (storage as any).simulations || [];
+  const simulation = simulations.find((s: any) => s.id === req.params.id);
+  if (!simulation) {
+    return res.status(404).json({ error: 'Simulation not found' });
+  }
+  res.json(simulation);
+});
+
+app.patch("/api/simulations/:id", (req, res) => {
+  try {
+    const simulations = (storage as any).simulations || [];
+    const index = simulations.findIndex((s: any) => s.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Simulation not found' });
+    }
+    simulations[index] = {
+      ...simulations[index],
+      ...req.body
+    };
+    res.json(simulations[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update simulation' });
+  }
+});
+
+// Quotes
+app.get("/api/quotes", (req, res) => {
+  console.log('[Vercel] GET /api/quotes');
+  const laneId = req.query.laneId;
+  if (laneId) {
+    const quotes = ((storage as any).quotes || [])
+      .filter((q: any) => q.laneId === laneId);
+    return res.json(quotes);
+  }
+  res.json((storage as any).quotes || []);
+});
+
+app.post("/api/quotes", (req, res) => {
+  try {
+    console.log('[Vercel] POST /api/quotes:', req.body);
+    const quote = {
+      id: String(Date.now()),
+      ...req.body,
+      createdAt: new Date()
+    };
+    if (!(storage as any).quotes) (storage as any).quotes = [];
+    (storage as any).quotes.push(quote);
+    res.status(201).json(quote);
+  } catch (error) {
+    console.error('[Vercel] Error creating quote:', error);
+    res.status(500).json({ error: 'Failed to create quote' });
+  }
+});
+
+app.get("/api/quotes/:id", (req, res) => {
+  const quotes = (storage as any).quotes || [];
+  const quote = quotes.find((q: any) => q.id === req.params.id);
+  if (!quote) {
+    return res.status(404).json({ error: 'Quote not found' });
+  }
+  res.json(quote);
+});
+
+app.patch("/api/quotes/:id", (req, res) => {
+  try {
+    const quotes = (storage as any).quotes || [];
+    const index = quotes.findIndex((q: any) => q.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Quote not found' });
+    }
+    quotes[index] = {
+      ...quotes[index],
+      ...req.body
+    };
+    res.json(quotes[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update quote' });
+  }
+});
+
+// Alternatives
+app.get("/api/alternatives", (req, res) => {
+  console.log('[Vercel] GET /api/alternatives');
+  const quoteId = req.query.quoteId;
+  if (quoteId) {
+    const alternatives = ((storage as any).alternatives || [])
+      .filter((a: any) => a.quoteId === quoteId);
+    return res.json(alternatives);
+  }
+  res.json((storage as any).alternatives || []);
+});
+
+app.post("/api/alternatives", (req, res) => {
+  try {
+    console.log('[Vercel] POST /api/alternatives:', req.body);
+    const alternative = {
+      id: String(Date.now()),
+      ...req.body,
+      createdAt: new Date()
+    };
+    if (!(storage as any).alternatives) (storage as any).alternatives = [];
+    (storage as any).alternatives.push(alternative);
+    res.status(201).json(alternative);
+  } catch (error) {
+    console.error('[Vercel] Error creating alternative:', error);
+    res.status(500).json({ error: 'Failed to create alternative' });
+  }
+});
+
+app.get("/api/alternatives/:id", (req, res) => {
+  const alternatives = (storage as any).alternatives || [];
+  const alternative = alternatives.find((a: any) => a.id === req.params.id);
+  if (!alternative) {
+    return res.status(404).json({ error: 'Alternative not found' });
+  }
+  res.json(alternative);
+});
+
+// Lanes - Add missing endpoints
+app.post("/api/lanes", (req, res) => {
+  try {
+    const lane = {
+      id: String(storage.lanes.length + 1),
+      ...req.body,
+      createdAt: new Date()
+    };
+    storage.lanes.push(lane);
+    res.status(201).json(lane);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create lane' });
+  }
+});
+
+app.get("/api/lanes/:id", (req, res) => {
+  const lane = storage.lanes.find(l => l.id === req.params.id);
+  if (!lane) {
+    return res.status(404).json({ error: 'Lane not found' });
+  }
+  res.json(lane);
+});
+
+app.patch("/api/lanes/:id", (req, res) => {
+  try {
+    const index = storage.lanes.findIndex(l => l.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Lane not found' });
+    }
+    storage.lanes[index] = {
+      ...storage.lanes[index],
+      ...req.body
+    };
+    res.json(storage.lanes[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update lane' });
+  }
+});
+
+app.delete("/api/lanes/:id", (req, res) => {
+  const index = storage.lanes.findIndex(l => l.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Lane not found' });
+  }
+  storage.lanes.splice(index, 1);
+  res.status(204).send();
 });
 
 // Export for Vercel
