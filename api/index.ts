@@ -54,15 +54,51 @@ function initData() {
       laneRatio: 1.15,
       historicalVolatility: 0.12,
       segments: [
-        { type: 'ocean', duration: 14, uncertainty: 'normal' },
-        { type: 'port', duration: 2, uncertainty: 'triangular' }
+        {
+          name: 'Ocean Transit',
+          baselineDays: 14,
+          distribution: 'normal',
+          parameters: { mean: 14, stdDev: 2 },
+          enabled: true
+        },
+        {
+          name: 'Port Processing',
+          baselineDays: 2,
+          distribution: 'normal',
+          parameters: { mean: 2, stdDev: 0.5 },
+          enabled: true
+        }
       ],
-      factors: {
-        seasonality: 0.08,
-        fuelSurcharge: 0.15,
-        carrierPremium: 0.05,
-        capacityUtilization: 0.85
-      },
+      factors: [
+        {
+          name: 'Seasonality',
+          type: 'seasonality',
+          meanMultiplier: 1.08,
+          parameters: { mean: 1.08, stdDev: 0.05 },
+          enabled: true
+        },
+        {
+          name: 'Fuel Surcharge',
+          type: 'fuelSurcharge',
+          meanMultiplier: 1.15,
+          parameters: { mean: 1.15, stdDev: 0.08 },
+          enabled: true
+        },
+        {
+          name: 'Carrier Premium',
+          type: 'carrierPremium',
+          meanMultiplier: 1.05,
+          parameters: { mean: 1.05, stdDev: 0.03 },
+          enabled: true
+        },
+        {
+          name: 'Capacity Utilization',
+          type: 'capacityUtilization',
+          meanMultiplier: 1.0,
+          parameters: { mean: 0.85, stdDev: 0.1 },
+          enabled: true
+        }
+      ],
       createdAt: new Date()
     },
     {
@@ -75,15 +111,51 @@ function initData() {
       laneRatio: 0.95,
       historicalVolatility: 0.10,
       segments: [
-        { type: 'ocean', duration: 10, uncertainty: 'normal' },
-        { type: 'port', duration: 1, uncertainty: 'triangular' }
+        {
+          name: 'Ocean Transit',
+          baselineDays: 10,
+          distribution: 'normal',
+          parameters: { mean: 10, stdDev: 1.5 },
+          enabled: true
+        },
+        {
+          name: 'Port Processing',
+          baselineDays: 1,
+          distribution: 'normal',
+          parameters: { mean: 1, stdDev: 0.3 },
+          enabled: true
+        }
       ],
-      factors: {
-        seasonality: 0.05,
-        fuelSurcharge: 0.12,
-        carrierPremium: 0.03,
-        capacityUtilization: 0.78
-      },
+      factors: [
+        {
+          name: 'Seasonality',
+          type: 'seasonality',
+          meanMultiplier: 1.05,
+          parameters: { mean: 1.05, stdDev: 0.04 },
+          enabled: true
+        },
+        {
+          name: 'Fuel Surcharge',
+          type: 'fuelSurcharge',
+          meanMultiplier: 1.12,
+          parameters: { mean: 1.12, stdDev: 0.06 },
+          enabled: true
+        },
+        {
+          name: 'Carrier Premium',
+          type: 'carrierPremium',
+          meanMultiplier: 1.03,
+          parameters: { mean: 1.03, stdDev: 0.02 },
+          enabled: true
+        },
+        {
+          name: 'Capacity Utilization',
+          type: 'capacityUtilization',
+          meanMultiplier: 1.0,
+          parameters: { mean: 0.78, stdDev: 0.09 },
+          enabled: true
+        }
+      ],
       createdAt: new Date()
     },
     {
@@ -96,15 +168,51 @@ function initData() {
       laneRatio: 0.75,
       historicalVolatility: 0.08,
       segments: [
-        { type: 'ocean', duration: 7, uncertainty: 'normal' },
-        { type: 'port', duration: 1, uncertainty: 'triangular' }
+        {
+          name: 'Ocean Transit',
+          baselineDays: 7,
+          distribution: 'normal',
+          parameters: { mean: 7, stdDev: 1 },
+          enabled: true
+        },
+        {
+          name: 'Port Processing',
+          baselineDays: 1,
+          distribution: 'normal',
+          parameters: { mean: 1, stdDev: 0.2 },
+          enabled: true
+        }
       ],
-      factors: {
-        seasonality: 0.04,
-        fuelSurcharge: 0.10,
-        carrierPremium: 0.02,
-        capacityUtilization: 0.72
-      },
+      factors: [
+        {
+          name: 'Seasonality',
+          type: 'seasonality',
+          meanMultiplier: 1.04,
+          parameters: { mean: 1.04, stdDev: 0.03 },
+          enabled: true
+        },
+        {
+          name: 'Fuel Surcharge',
+          type: 'fuelSurcharge',
+          meanMultiplier: 1.10,
+          parameters: { mean: 1.10, stdDev: 0.05 },
+          enabled: true
+        },
+        {
+          name: 'Carrier Premium',
+          type: 'carrierPremium',
+          meanMultiplier: 1.02,
+          parameters: { mean: 1.02, stdDev: 0.01 },
+          enabled: true
+        },
+        {
+          name: 'Capacity Utilization',
+          type: 'capacityUtilization',
+          meanMultiplier: 1.0,
+          parameters: { mean: 0.72, stdDev: 0.08 },
+          enabled: true
+        }
+      ],
       createdAt: new Date()
     }
   ];
