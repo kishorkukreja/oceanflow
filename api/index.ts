@@ -109,6 +109,34 @@ function initData() {
       status: 'pending_quotes',
       requiredDeliveryDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
       createdAt: new Date()
+    },
+    {
+      id: '2',
+      referenceNumber: 'SHP-2024-002',
+      origin: 'Rotterdam',
+      destination: 'New York',
+      commodity: 'Automotive Parts',
+      weight: 22000,
+      volume: 48,
+      urgency: 'high',
+      specialRequirements: ['hazmat_certified'],
+      status: 'evaluating',
+      requiredDeliveryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: '3',
+      referenceNumber: 'SHP-2024-003',
+      origin: 'Singapore',
+      destination: 'Sydney',
+      commodity: 'Pharmaceuticals',
+      weight: 8500,
+      volume: 20,
+      urgency: 'high',
+      specialRequirements: ['temperature_controlled', 'time_sensitive'],
+      status: 'decision_pending',
+      requiredDeliveryDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
     }
   ];
 
@@ -158,6 +186,150 @@ app.get("/api/shipments", (req, res) => {
 app.get("/api/automation-processes", (req, res) => {
   console.log('[Vercel] GET /api/automation-processes - Returning', storage.processes.length, 'processes');
   res.json(storage.processes);
+});
+
+app.post("/api/automation-processes", (req, res) => {
+  try {
+    console.log('[Vercel] POST /api/automation-processes - Creating process:', req.body);
+    const process = {
+      id: String(storage.processes.length + 1),
+      ...req.body,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    storage.processes.push(process);
+    console.log('[Vercel] Process created:', process.id);
+    res.status(201).json(process);
+  } catch (error) {
+    console.error('[Vercel] Error creating process:', error);
+    res.status(500).json({ error: 'Failed to create automation process' });
+  }
+});
+
+app.get("/api/automation-processes/:id", (req, res) => {
+  const process = storage.processes.find(p => p.id === req.params.id);
+  if (!process) {
+    return res.status(404).json({ error: 'Process not found' });
+  }
+  res.json(process);
+});
+
+app.patch("/api/automation-processes/:id", (req, res) => {
+  try {
+    const index = storage.processes.findIndex(p => p.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Process not found' });
+    }
+    storage.processes[index] = {
+      ...storage.processes[index],
+      ...req.body,
+      updatedAt: new Date()
+    };
+    res.json(storage.processes[index]);
+  } catch (error) {
+    console.error('[Vercel] Error updating process:', error);
+    res.status(500).json({ error: 'Failed to update automation process' });
+  }
+});
+
+// Shipments endpoints
+app.get("/api/shipments/:id", (req, res) => {
+  const shipment = storage.shipments.find(s => s.id === req.params.id);
+  if (!shipment) {
+    return res.status(404).json({ error: 'Shipment not found' });
+  }
+  res.json(shipment);
+});
+
+app.post("/api/shipments", (req, res) => {
+  try {
+    const shipment = {
+      id: String(storage.shipments.length + 1),
+      ...req.body,
+      createdAt: new Date()
+    };
+    storage.shipments.push(shipment);
+    res.status(201).json(shipment);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create shipment' });
+  }
+});
+
+app.patch("/api/shipments/:id", (req, res) => {
+  try {
+    const index = storage.shipments.findIndex(s => s.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Shipment not found' });
+    }
+    storage.shipments[index] = {
+      ...storage.shipments[index],
+      ...req.body
+    };
+    res.json(storage.shipments[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update shipment' });
+  }
+});
+
+// Vendor Evaluations
+app.get("/api/vendor-evaluations", (req, res) => {
+  const processId = req.query.processId;
+  if (processId) {
+    const evaluations = storage.processes
+      .filter((p: any) => p.id === processId)
+      .flatMap((p: any) => p.vendorEvaluations || []);
+    return res.json(evaluations);
+  }
+  res.json([]);
+});
+
+app.post("/api/vendor-evaluations", (req, res) => {
+  try {
+    const evaluation = {
+      id: String(Date.now()),
+      ...req.body,
+      createdAt: new Date()
+    };
+    res.status(201).json(evaluation);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create vendor evaluation' });
+  }
+});
+
+// Process Documents
+app.get("/api/process-documents", (req, res) => {
+  res.json([]);
+});
+
+app.post("/api/process-documents", (req, res) => {
+  try {
+    const document = {
+      id: String(Date.now()),
+      ...req.body,
+      createdAt: new Date()
+    };
+    res.status(201).json(document);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create document' });
+  }
+});
+
+// Process Actions
+app.get("/api/process-actions", (req, res) => {
+  res.json([]);
+});
+
+app.post("/api/process-actions", (req, res) => {
+  try {
+    const action = {
+      id: String(Date.now()),
+      ...req.body,
+      createdAt: new Date()
+    };
+    res.status(201).json(action);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create action' });
+  }
 });
 
 // Export for Vercel
