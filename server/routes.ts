@@ -1,12 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { 
+import { initializeData } from "./init-data";
+import {
   insertLaneSchema, insertSimulationSchema, insertQuoteSchema, insertAlternativeSchema, insertMarketIndexSchema, createQuoteSchema,
   insertShipmentSchema, insertAutomationProcessSchema, insertVendorEvaluationSchema, insertProcessDocumentSchema, insertProcessActionSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize default data
+  await initializeData();
   // Market Indices
   app.get("/api/indices", async (req, res) => {
     try {
