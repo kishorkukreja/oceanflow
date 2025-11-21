@@ -171,38 +171,40 @@ export function FloatingChatbot() {
   }
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 h-[500px] flex flex-col shadow-xl z-50" data-testid="chatbot-window">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Bot className="h-4 w-4 text-primary" />
+    <Card className="fixed bottom-6 right-6 w-[440px] h-[600px] flex flex-col shadow-2xl border-2 z-50" data-testid="chatbot-window">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+        <CardTitle className="text-lg flex items-center gap-2 font-semibold">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Bot className="h-5 w-5 text-primary" />
+          </div>
           Logistics Assistant
         </CardTitle>
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 w-6 p-0"
+          className="h-8 w-8 p-0 hover:bg-destructive/10"
           onClick={() => setIsOpen(false)}
           data-testid="chatbot-close"
         >
-          <X className="h-3 w-3" />
+          <X className="h-4 w-4" />
         </Button>
       </CardHeader>
-      
-      <CardContent className="flex-1 flex flex-col p-3 pt-0">
+
+      <CardContent className="flex-1 flex flex-col p-4 pt-4 overflow-hidden">
         {/* Suggested Questions */}
         {messages.length <= 1 && (
-          <div className="mb-4">
-            <p className="text-xs text-muted-foreground mb-2">Try asking:</p>
+          <div className="mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <p className="text-sm text-muted-foreground mb-3 font-medium">Quick questions:</p>
             <div className="grid grid-cols-1 gap-2">
-              {SUGGESTED_QUESTIONS.map((question, index) => (
+              {SUGGESTED_QUESTIONS.slice(0, 4).map((question, index) => (
                 <Button
                   key={index}
                   variant="outline"
                   size="sm"
-                  className="text-left justify-start h-auto p-2 text-xs"
+                  className="text-left justify-start h-auto p-3 text-xs hover:bg-primary/5 hover:border-primary/30 transition-all"
                   onClick={() => {
                     setInputValue(question);
-                    handleSendMessage();
+                    setTimeout(() => handleSendMessage(), 100);
                   }}
                   data-testid={`suggested-question-${index}`}
                 >
@@ -214,59 +216,67 @@ export function FloatingChatbot() {
         )}
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto space-y-3 mb-3">
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
             >
-              <div className="flex items-start gap-2 max-w-[80%]">
+              <div className={`flex items-start gap-2 ${message.sender === 'user' ? 'max-w-[85%]' : 'max-w-[90%]'}`}>
                 {message.sender === 'bot' && (
-                  <Bot className="h-4 w-4 mt-1 text-primary flex-shrink-0" />
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="h-4 w-4 text-primary" />
+                  </div>
                 )}
                 <div
-                  className={`px-3 py-2 rounded-lg text-sm ${
+                  className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
                     message.sender === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                      ? 'bg-primary text-primary-foreground rounded-br-md shadow-sm'
+                      : 'bg-muted/80 text-foreground rounded-bl-md shadow-sm'
                   }`}
+                  style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                 >
                   {message.text}
                 </div>
                 {message.sender === 'user' && (
-                  <User className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
+                  <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 )}
               </div>
             </div>
           ))}
-          
+
           {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex items-center gap-2">
+            <div className="flex justify-start animate-in fade-in duration-300">
+              <div className="flex items-center gap-2 px-4 py-3 bg-muted/80 rounded-2xl rounded-bl-md">
                 <Bot className="h-4 w-4 text-primary" />
-                <Badge variant="secondary" className="animate-pulse">
-                  typing...
-                </Badge>
+                <div className="flex gap-1">
+                  <span className="h-2 w-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="h-2 w-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="h-2 w-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </div>
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
-        
+
         {/* Input Area */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-3 border-t">
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask about rates, quotes, transit times..."
-            className="flex-1"
+            className="flex-1 h-11"
             disabled={isTyping}
             data-testid="chatbot-input"
           />
           <Button
             onClick={handleSendMessage}
-            size="sm"
+            size="default"
+            className="h-11 w-11 p-0"
             disabled={!inputValue.trim() || isTyping}
             data-testid="chatbot-send"
           >
