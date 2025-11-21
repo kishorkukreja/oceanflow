@@ -161,8 +161,6 @@ export default function SimulationPage() {
     const simulationData = {
       laneId: selectedLane,
       iterations: parseInt(iterations),
-      rateDistribution: {},
-      transitDistribution: {},
       status: "running"
     };
 

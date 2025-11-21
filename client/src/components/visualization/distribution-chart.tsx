@@ -14,7 +14,7 @@ interface DistributionChartProps {
 
 export function DistributionChart({ data, title, type, showStatistics = true }: DistributionChartProps) {
   const chartData = useMemo(() => {
-    if (!data || data.length === 0) return { histogram: [], statistics: null };
+    if (!data || !Array.isArray(data) || data.length === 0) return { histogram: [], statistics: null };
 
     const values = data.map(result => {
       switch (type) {
