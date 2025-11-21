@@ -155,11 +155,43 @@ function initData() {
     }
   ];
 
+  // Automation Processes
+  storage.processes = [
+    {
+      id: '1',
+      shipmentId: '1',
+      currentStage: 'quote_generation',
+      status: 'in_progress',
+      stages: ['quote_generation', 'quote_evaluation', 'decision', 'booking', 'approval', 'documentation'],
+      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      updatedAt: new Date()
+    }
+  ];
+
+  // Simulations
+  storage.simulations = [];
+
+  // Quotes
+  storage.quotes = [];
+
+  // Alternatives
+  storage.alternatives = [];
+
+  // Vendor Evaluations
+  storage.vendorEvaluations = [];
+
+  // Process Documents
+  storage.processDocuments = [];
+
+  // Process Actions
+  storage.processActions = [];
+
   initialized = true;
   console.log('[Vercel] Data initialized successfully:', {
     lanes: storage.lanes.length,
     indices: storage.indices.length,
-    shipments: storage.shipments.length
+    shipments: storage.shipments.length,
+    processes: storage.processes.length
   });
 }
 
