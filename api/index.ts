@@ -6,17 +6,32 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Simple in-memory storage for demo
+// Note: This persists only within a single serverless instance
+// Data may be lost between requests if hitting different instances
 const storage = {
   lanes: [] as any[],
   indices: [] as any[],
   shipments: [] as any[],
-  processes: [] as any[]
+  processes: [] as any[],
+  simulations: [] as any[],
+  quotes: [] as any[],
+  alternatives: [] as any[],
+  vendorEvaluations: [] as any[],
+  processDocuments: [] as any[],
+  processActions: [] as any[]
 };
 
-// Initialize data once
+// Initialize data once per instance
 let initialized = false;
 function initData() {
-  if (initialized) return;
+  if (initialized) {
+    console.log('[Vercel] Already initialized, data counts:', {
+      lanes: storage.lanes.length,
+      processes: storage.processes.length,
+      shipments: storage.shipments.length
+    });
+    return;
+  }
 
   console.log('[Vercel] Initializing in-memory data...');
 
@@ -140,18 +155,12 @@ function initData() {
     }
   ];
 
-  storage.processes = [];
-
-  // Initialize additional storage
-  (storage as any).simulations = [];
-  (storage as any).quotes = [];
-  (storage as any).alternatives = [];
-  (storage as any).vendorEvaluations = [];
-  (storage as any).processDocuments = [];
-  (storage as any).processActions = [];
-
   initialized = true;
-  console.log('[Vercel] Data initialized - Lanes:', storage.lanes.length, 'Indices:', storage.indices.length);
+  console.log('[Vercel] Data initialized successfully:', {
+    lanes: storage.lanes.length,
+    indices: storage.indices.length,
+    shipments: storage.shipments.length
+  });
 }
 
 // Initialize on module load
@@ -198,15 +207,18 @@ app.get("/api/automation-processes", (req, res) => {
 
 app.post("/api/automation-processes", (req, res) => {
   try {
+    initData(); // Ensure data is initialized
     console.log('[Vercel] POST /api/automation-processes - Creating process:', req.body);
+    console.log('[Vercel] Current processes count:', storage.processes.length);
+
     const process = {
-      id: String(storage.processes.length + 1),
+      id: String(Date.now()), // Use timestamp for unique ID
       ...req.body,
       createdAt: new Date(),
       updatedAt: new Date()
     };
     storage.processes.push(process);
-    console.log('[Vercel] Process created:', process.id);
+    console.log('[Vercel] Process created with ID:', process.id, 'Total processes:', storage.processes.length);
     res.status(201).json(process);
   } catch (error) {
     console.error('[Vercel] Error creating process:', error);
@@ -224,15 +236,31 @@ app.get("/api/automation-processes/:id", (req, res) => {
 
 app.patch("/api/automation-processes/:id", (req, res) => {
   try {
+    initData(); // Ensure data is initialized
+    console.log('[Vercel] PATCH /api/automation-processes/:id');
+    console.log('[Vercel] Looking for process ID:', req.params.id);
+    console.log('[Vercel] Available processes:', storage.processes.map(p => ({ id: p.id, stage: p.currentStage })));
+
     const index = storage.processes.findIndex(p => p.id === req.params.id);
     if (index === -1) {
-      return res.status(404).json({ error: 'Process not found' });
+      console.log('[Vercel] Process not found. Creating new process with provided data.');
+      // If not found, create it (workaround for serverless ephemeral nature)
+      const process = {
+        id: req.params.id,
+        ...req.body,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      storage.processes.push(process);
+      return res.json(process);
     }
+
     storage.processes[index] = {
       ...storage.processes[index],
       ...req.body,
       updatedAt: new Date()
     };
+    console.log('[Vercel] Process updated:', storage.processes[index].id);
     res.json(storage.processes[index]);
   } catch (error) {
     console.error('[Vercel] Error updating process:', error);
