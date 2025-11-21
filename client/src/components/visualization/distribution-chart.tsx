@@ -26,13 +26,27 @@ export function DistributionChart({ data, title, type, showStatistics = true }: 
     });
 
     const statistics = calculateStatistics(values);
-    
+
     // Create histogram bins
     const numBins = 30;
     const min = Math.min(...values);
     const max = Math.max(...values);
-    const binWidth = (max - min) / numBins;
-    
+    const range = max - min;
+
+    // Handle case where all values are the same (no variance)
+    if (range === 0 || !isFinite(range)) {
+      const singleBin = {
+        range: `${min.toFixed(2)}`,
+        value: min,
+        count: values.length,
+        frequency: 100,
+        density: 1
+      };
+      return { histogram: [singleBin], statistics };
+    }
+
+    const binWidth = range / numBins;
+
     const bins = Array.from({ length: numBins }, (_, i) => ({
       binStart: min + i * binWidth,
       binEnd: min + (i + 1) * binWidth,
@@ -57,7 +71,7 @@ export function DistributionChart({ data, title, type, showStatistics = true }: 
       value: (bin.binStart + bin.binEnd) / 2,
       count: bin.count,
       frequency: bin.frequency * 100, // Convert to percentage
-      density: bin.frequency / binWidth
+      density: binWidth > 0 ? bin.frequency / binWidth : 0
     }));
 
     return { histogram, statistics };

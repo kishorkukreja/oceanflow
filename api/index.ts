@@ -73,6 +73,7 @@ function initData() {
         {
           name: 'Seasonality',
           type: 'seasonality',
+          distribution: 'normal',
           meanMultiplier: 1.08,
           parameters: { mean: 1.08, stdDev: 0.05 },
           enabled: true
@@ -80,6 +81,7 @@ function initData() {
         {
           name: 'Fuel Surcharge',
           type: 'fuelSurcharge',
+          distribution: 'normal',
           meanMultiplier: 1.15,
           parameters: { mean: 1.15, stdDev: 0.08 },
           enabled: true
@@ -87,6 +89,7 @@ function initData() {
         {
           name: 'Carrier Premium',
           type: 'carrierPremium',
+          distribution: 'normal',
           meanMultiplier: 1.05,
           parameters: { mean: 1.05, stdDev: 0.03 },
           enabled: true
@@ -94,6 +97,7 @@ function initData() {
         {
           name: 'Capacity Utilization',
           type: 'capacityUtilization',
+          distribution: 'normal',
           meanMultiplier: 1.0,
           parameters: { mean: 0.85, stdDev: 0.1 },
           enabled: true
@@ -130,6 +134,7 @@ function initData() {
         {
           name: 'Seasonality',
           type: 'seasonality',
+          distribution: 'normal',
           meanMultiplier: 1.05,
           parameters: { mean: 1.05, stdDev: 0.04 },
           enabled: true
@@ -137,6 +142,7 @@ function initData() {
         {
           name: 'Fuel Surcharge',
           type: 'fuelSurcharge',
+          distribution: 'normal',
           meanMultiplier: 1.12,
           parameters: { mean: 1.12, stdDev: 0.06 },
           enabled: true
@@ -144,6 +150,7 @@ function initData() {
         {
           name: 'Carrier Premium',
           type: 'carrierPremium',
+          distribution: 'normal',
           meanMultiplier: 1.03,
           parameters: { mean: 1.03, stdDev: 0.02 },
           enabled: true
@@ -151,6 +158,7 @@ function initData() {
         {
           name: 'Capacity Utilization',
           type: 'capacityUtilization',
+          distribution: 'normal',
           meanMultiplier: 1.0,
           parameters: { mean: 0.78, stdDev: 0.09 },
           enabled: true
@@ -187,6 +195,7 @@ function initData() {
         {
           name: 'Seasonality',
           type: 'seasonality',
+          distribution: 'normal',
           meanMultiplier: 1.04,
           parameters: { mean: 1.04, stdDev: 0.03 },
           enabled: true
@@ -194,6 +203,7 @@ function initData() {
         {
           name: 'Fuel Surcharge',
           type: 'fuelSurcharge',
+          distribution: 'normal',
           meanMultiplier: 1.10,
           parameters: { mean: 1.10, stdDev: 0.05 },
           enabled: true
@@ -201,6 +211,7 @@ function initData() {
         {
           name: 'Carrier Premium',
           type: 'carrierPremium',
+          distribution: 'normal',
           meanMultiplier: 1.02,
           parameters: { mean: 1.02, stdDev: 0.01 },
           enabled: true
@@ -208,6 +219,7 @@ function initData() {
         {
           name: 'Capacity Utilization',
           type: 'capacityUtilization',
+          distribution: 'normal',
           meanMultiplier: 1.0,
           parameters: { mean: 0.72, stdDev: 0.08 },
           enabled: true
