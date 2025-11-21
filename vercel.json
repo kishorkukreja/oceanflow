@@ -1,33 +1,14 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
+      "source": "/api/:path*",
+      "destination": "/api/index"
     },
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist/public"
-      }
+      "source": "/:path*",
+      "destination": "/index.html"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/index.ts"
-    },
-    {
-      "src": "/(.*\\.(js|css|json|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
-      "dest": "/dist/public/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/public/index.html"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public"
 }
