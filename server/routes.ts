@@ -8,15 +8,34 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint
+  app.get("/api/health", async (req, res) => {
+    res.json({
+      status: "ok",
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
+      storageType: process.env.DATABASE_URL ? "database" : "in-memory",
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Initialize default data
-  await initializeData();
+  try {
+    await initializeData();
+  } catch (error) {
+    console.error('Failed to initialize data:', error);
+  }
+
   // Market Indices
   app.get("/api/indices", async (req, res) => {
     try {
       const indices = await storage.getMarketIndices();
       res.json(indices);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch market indices" });
+      console.error('Error fetching indices:', error);
+      res.status(500).json({
+        error: "Failed to fetch market indices",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -36,7 +55,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lanes = await storage.getLanes();
       res.json(lanes);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch lanes" });
+      console.error('Error fetching lanes:', error);
+      res.status(500).json({
+        error: "Failed to fetch lanes",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
